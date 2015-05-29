@@ -151,7 +151,7 @@ func main() {
 		stderr("Failed sync: %v", err)
 		os.Exit(9)
 	}
-	stdout("Updated %s", usr.Name) // TODO(vc): get the authorized_keys path from akd
+	stdout("Updated %s", akd.KeysFilePath())
 
 	os.Exit(0)
 }
