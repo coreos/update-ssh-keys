@@ -47,6 +47,10 @@ func stdout(f string, a ...interface{}) {
 	fmt.Fprintln(os.Stdout, strings.TrimSuffix(out, "\n"))
 }
 
+func panicf(f string, a ...interface{}) {
+	panic(fmt.Sprintf(f, a...))
+}
+
 // printKeys prints all the keys currently managed.
 func printKeys(akd *keys.SSHAuthorizedKeysDir) error {
 	stdout("All keys for %s", *flagUser)
@@ -91,11 +95,37 @@ func addKeys(akd *keys.SSHAuthorizedKeysDir, name string, force bool) error {
 		k = append(k, b...)
 	}
 
-	// TODO(vc): akd.Add() treats keys as opaque objects, so we need to
-	// sanity check them ourselves before adding them.
-	// update-ssh-keys employs ssh-keygen -l -f for this purpose, can do
-	// same here.
+	if !validKeys(k) {
+		return fmt.Errorf("key(s) invalid.")
+	}
+
 	return akd.Add(name, k, *flagReplace, force)
+}
+
+// validKeys validates a byte slice contains valid ssh keys.
+func validKeys(keys []byte) bool {
+	// we need to write out a temp file for ssh-keygen to consume.
+	tf, err := ioutil.TempFile("", "update-ssh-keys-")
+	if err != nil {
+		panicf("unable to create temporary file: %v", err)
+	}
+	defer func() {
+		os.Remove(tf.Name())
+		tf.Close()
+	}()
+
+	if _, err := tf.Write(keys); err != nil {
+		panicf("unable to write temporary file: %v", err)
+	}
+
+	cmd := exec.Command("ssh-keygen", "-l", "-f", tf.Name())
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return false
+	}
+	stdout("%s", out)
+
+	return true
 }
 
 func main() {
