@@ -322,6 +322,19 @@ func (akd *SSHAuthorizedKeysDir) Add(name string, keys []byte, replace, force bo
 	return ak.Replace(keys)
 }
 
+// KeysFilePath returns the backing authorized_keys file path for this
+// SSHAuthorizedKeysDir.  This is the file written to by Sync().
+func (akd *SSHAuthorizedKeysDir) KeysFilePath() string {
+	return authKeysFilePath(akd.user)
+}
+
+// KeysDirPath returns the authorized_keys.d directory path for this
+// SSHAuthorizedKeysDir.  This is the directory containing the discrete key
+// files.
+func (akd *SSHAuthorizedKeysDir) KeysDirPath() string {
+	return authKeysDirPath(akd.user)
+}
+
 // Sync synchronizes the user's ~/.ssh/authorized_keys file with the
 // current authorized_keys.d directory state.
 func (akd *SSHAuthorizedKeysDir) Sync() error {
