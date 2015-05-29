@@ -43,8 +43,8 @@ const (
 
 // SSHAuthorizedKeysDir represents an opened user's authorized_keys.d.
 type SSHAuthorizedKeysDir struct {
-	Path string     // Path to authorized_keys.d directory.
-	User *user.User // User of the directory.
+	path string     // Path to authorized_keys.d directory.
+	user *user.User // User of the directory.
 	lock *os.File   // Lock file for serializing Open()-Close().
 }
 
@@ -134,7 +134,7 @@ func opendir(dir string) (*SSHAuthorizedKeysDir, error) {
 	if !fi.IsDir() {
 		return nil, fmt.Errorf("%q is not a directory", dir)
 	}
-	return &SSHAuthorizedKeysDir{Path: dir}, nil
+	return &SSHAuthorizedKeysDir{path: dir}, nil
 }
 
 // acquireLock locks the lock file for the given user's authorized_keys.d.
@@ -168,7 +168,7 @@ func createAuthorizedKeysDir(u *user.User) (*SSHAuthorizedKeysDir, error) {
 		if err != nil {
 			return err
 		}
-		d.User = u
+		d.user = u
 
 		akfb, err := ioutil.ReadFile(authKeysFilePath(u))
 		if err != nil && !os.IsNotExist(err) {
@@ -216,7 +216,7 @@ func Open(usr *user.User, create bool) (*SSHAuthorizedKeysDir, error) {
 	}
 
 	akd.lock = l
-	akd.User = usr
+	akd.user = usr
 	return akd, nil
 }
 
@@ -227,23 +227,23 @@ func (akd *SSHAuthorizedKeysDir) Close() error {
 
 // rename renames the authorized_keys dir to the supplied path.
 func (akd *SSHAuthorizedKeysDir) rename(to string) error {
-	err := os.Rename(akd.Path, to)
+	err := os.Rename(akd.path, to)
 	if err != nil {
 		return err
 	}
-	akd.Path = to
+	akd.path = to
 	return nil
 }
 
-// path returns the path to the named key.
-func (akd *SSHAuthorizedKeysDir) path(n string) string {
-	return filepath.Join(akd.Path, n)
+// keyPath returns the path to the named key.
+func (akd *SSHAuthorizedKeysDir) keyPath(n string) string {
+	return filepath.Join(akd.path, n)
 }
 
 // WalkKeys iterates across all keys in akd, calling f for each key.
 // Iterating stops on error, and the error is propagated out.
 func (akd *SSHAuthorizedKeysDir) WalkKeys(f func(*SSHAuthorizedKey) error) error {
-	d, err := os.Open(akd.Path)
+	d, err := os.Open(akd.path)
 	if err != nil {
 		return err
 	}
@@ -269,7 +269,7 @@ func (akd *SSHAuthorizedKeysDir) WalkKeys(f func(*SSHAuthorizedKey) error) error
 
 // Open opens the key at name.
 func (akd *SSHAuthorizedKeysDir) Open(name string) (*SSHAuthorizedKey, error) {
-	p := akd.path(name)
+	p := akd.keyPath(name)
 	fi, err := os.Stat(p)
 	if err != nil {
 		return nil, err
@@ -307,7 +307,7 @@ func (akd *SSHAuthorizedKeysDir) Disable(name string) error {
 func (akd *SSHAuthorizedKeysDir) Add(name string, keys []byte, replace, force bool) error {
 	// TODO FIXME(vc): name can contain anything
 	// either add escaping, or place restrictions on its contents.
-	p := akd.path(name)
+	p := akd.keyPath(name)
 	fi, err := os.Stat(p)
 	if err == nil {
 		if fi.Size() > 0 && !replace {
@@ -325,13 +325,13 @@ func (akd *SSHAuthorizedKeysDir) Add(name string, keys []byte, replace, force bo
 // Sync synchronizes the user's ~/.ssh/authorized_keys file with the
 // current authorized_keys.d directory state.
 func (akd *SSHAuthorizedKeysDir) Sync() error {
-	return asUser(akd.User, akd.doSync)
+	return asUser(akd.user, akd.doSync)
 }
 
 // Sync synchronizes the user's ~/.ssh/authorized_keys file with the
 // current authorized_keys.d directory state.
 func (akd *SSHAuthorizedKeysDir) doSync() error {
-	sp := stageFilePath(akd.User)
+	sp := stageFilePath(akd.user)
 	sf, err := os.OpenFile(sp, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
 	if err != nil {
 		return err
@@ -362,7 +362,7 @@ func (akd *SSHAuthorizedKeysDir) doSync() error {
 		return err
 	}
 
-	err = os.Rename(sp, authKeysFilePath(akd.User))
+	err = os.Rename(sp, authKeysFilePath(akd.user))
 	if err != nil {
 		return err
 	}
@@ -382,8 +382,8 @@ func (ak *SSHAuthorizedKey) Disable() error {
 
 // Replace replaces the opened key with the supplied data.
 func (ak *SSHAuthorizedKey) Replace(keys []byte) error {
-	return asUser(ak.origin.User, func() error {
-		sp := stageFilePath(ak.origin.User)
+	return asUser(ak.origin.user, func() error {
+		sp := stageFilePath(ak.origin.user)
 		sf, err := os.OpenFile(sp, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 		if err != nil {
 			return err
