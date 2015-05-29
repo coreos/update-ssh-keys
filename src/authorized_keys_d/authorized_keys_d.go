@@ -14,9 +14,9 @@
 
 // +build linux
 
-// ssh_keydir manages a user's ~/.ssh/authorized_keys.d and can produce a
-// ~/.ssh/authorized_keys file from the authorized_keys.d contents.
-package ssh_keydir
+// authorized_keys_d manages a user's ~/.ssh/authorized_keys.d and can produce
+// a ~/.ssh/authorized_keys file from the authorized_keys.d contents.
+package authorized_keys_d
 
 import (
 	"fmt"
