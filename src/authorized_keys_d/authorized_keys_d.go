@@ -27,6 +27,7 @@ import (
 	"runtime"
 	"sort"
 	"strconv"
+	"strings"
 	"syscall"
 )
 
@@ -304,9 +305,12 @@ func (akd *SSHAuthorizedKeysDir) Disable(name string) error {
 // Add adds the supplied key at name.
 // replace enables replacing keys already existing at name.
 // force enables adding keys to a disabled name, enabling it in the process.
+// Names starting wtih ".", and anything containing "/" are disallowed.
 func (akd *SSHAuthorizedKeysDir) Add(name string, keys []byte, replace, force bool) error {
-	// TODO FIXME(vc): name can contain anything
-	// either add escaping, or place restrictions on its contents.
+	if strings.HasPrefix(name, ".") || strings.Contains(name, "/") {
+		return fmt.Errorf(`illegal name`)
+	}
+
 	p := akd.keyPath(name)
 	fi, err := os.Stat(p)
 	if err == nil {
