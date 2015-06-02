@@ -102,8 +102,14 @@ func asUser(usr *user.User, f func() error) error {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	asu, _ := strconv.Atoi(usr.Uid)
-	asg, _ := strconv.Atoi(usr.Gid)
+	asu, err := strconv.Atoi(usr.Uid)
+	if err != nil {
+		return fmt.Errorf("invalid uid: %v", err)
+	}
+	asg, err := strconv.Atoi(usr.Gid)
+	if err != nil {
+		return fmt.Errorf("invalid gid: %v", err)
+	}
 
 	eu := os.Geteuid()
 	eg := os.Getegid()
