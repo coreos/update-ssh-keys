@@ -2,7 +2,7 @@
 
 source ./build
 
-SRC="src authorized_keys_d"
+SRC="src authorized_keys_d authorized_keys_d/as_user"
 
 echo "Checking gofmt..."
 fmtRes=$(gofmt -s -l $SRC)
