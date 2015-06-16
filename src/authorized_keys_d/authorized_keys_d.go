@@ -24,11 +24,11 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
-	"runtime"
 	"sort"
-	"strconv"
 	"strings"
 	"syscall"
+
+	"github.com/coreos/update-ssh-keys/authorized_keys_d/as_user"
 )
 
 const (
@@ -87,51 +87,6 @@ func stageFilePath(u *user.User) string {
 	return filepath.Join(sshDirPath(u), stageFile)
 }
 
-// withUmask calls function f with the umask modified.
-func withUmask(umask int, f func() error) error {
-	o := syscall.Umask(umask)
-	defer syscall.Umask(o)
-	return f()
-}
-
-// asUser calls function f as the user/group usr with a umask of 077.
-func asUser(usr *user.User, f func() error) error {
-	// FIXME(vc): This will probably need to be changed to use CGO for the
-	// user/group-switched operations in self-created threads so the Go
-	// scheduler can't spuriously call clone() from them.
-	// This is an implementation detail though, nothing externally visible.
-	runtime.LockOSThread()
-	defer runtime.UnlockOSThread()
-
-	asu, err := strconv.Atoi(usr.Uid)
-	if err != nil {
-		return fmt.Errorf("invalid uid: %v", err)
-	}
-	asg, err := strconv.Atoi(usr.Gid)
-	if err != nil {
-		return fmt.Errorf("invalid gid: %v", err)
-	}
-
-	eu := os.Geteuid()
-	eg := os.Getegid()
-
-	if eg != asg {
-		if err := syscall.Setregid(-1, asg); err != nil {
-			return err
-		}
-		defer syscall.Setregid(-1, eg)
-	}
-
-	if eu != asu {
-		if err := syscall.Setreuid(-1, asu); err != nil {
-			return err
-		}
-		defer syscall.Setreuid(-1, eu)
-	}
-
-	return withUmask(077, f)
-}
-
 // opendir opens the authorized keys directory.
 func opendir(dir string) (*SSHAuthorizedKeysDir, error) {
 	fi, err := os.Stat(dir)
@@ -149,7 +104,8 @@ func opendir(dir string) (*SSHAuthorizedKeysDir, error) {
 // The locking is currently a simple coarse-grained mutex held for the
 // Open()-Close() duration, implemented using a lock file in the user's ~/.
 func acquireLock(u *user.User) (*os.File, error) {
-	f, err := os.OpenFile(lockFilePath(u), os.O_CREATE|os.O_RDONLY, 0600)
+	f, err := as_user.OpenFile(u, lockFilePath(u),
+		syscall.O_CREAT|syscall.O_RDONLY, 0600)
 	if err != nil {
 		return nil, err
 	}
@@ -163,35 +119,30 @@ func acquireLock(u *user.User) (*os.File, error) {
 // createAuthorizedKeysDir creates an authorized keys directory for the user.
 // If the user has an authorized_keys file, it is migrated.
 func createAuthorizedKeysDir(u *user.User) (*SSHAuthorizedKeysDir, error) {
-	var akd *SSHAuthorizedKeysDir
-	err := asUser(u, func() error {
-		td := stageDirPath(u)
-		if err := os.MkdirAll(td, 0700); err != nil {
-			return err
-		}
-		defer os.RemoveAll(td)
+	td := stageDirPath(u)
+	if err := as_user.MkdirAll(u, td, 0700); err != nil {
+		return nil, err
+	}
+	defer os.RemoveAll(td)
 
-		d, err := opendir(td)
+	akd, err := opendir(td)
+	if err != nil {
+		return nil, err
+	}
+	akd.user = u
+
+	akfb, err := ioutil.ReadFile(authKeysFilePath(u))
+	if err != nil && !os.IsNotExist(err) {
+		return nil, err
+	} else if err == nil {
+		err = akd.Add(PreservedKeysName, akfb, false, false)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		d.user = u
-
-		akfb, err := ioutil.ReadFile(authKeysFilePath(u))
-		if err != nil && !os.IsNotExist(err) {
-			return err
-		} else if err == nil {
-			err = d.Add(PreservedKeysName, akfb, false, false)
-			if err != nil {
-				return err
-			}
-		}
-		if err = d.rename(authKeysDirPath(u)); err != nil {
-			return err
-		}
-		akd = d
-		return nil
-	})
+	}
+	if err = akd.rename(authKeysDirPath(u)); err != nil {
+		return nil, err
+	}
 	return akd, err
 }
 
@@ -234,7 +185,7 @@ func (akd *SSHAuthorizedKeysDir) Close() error {
 
 // rename renames the authorized_keys dir to the supplied path.
 func (akd *SSHAuthorizedKeysDir) rename(to string) error {
-	err := os.Rename(akd.path, to)
+	err := as_user.Rename(akd.user, akd.path, to)
 	if err != nil {
 		return err
 	}
@@ -348,14 +299,9 @@ func (akd *SSHAuthorizedKeysDir) KeysDirPath() string {
 // Sync synchronizes the user's ~/.ssh/authorized_keys file with the
 // current authorized_keys.d directory state.
 func (akd *SSHAuthorizedKeysDir) Sync() error {
-	return asUser(akd.user, akd.doSync)
-}
-
-// Sync synchronizes the user's ~/.ssh/authorized_keys file with the
-// current authorized_keys.d directory state.
-func (akd *SSHAuthorizedKeysDir) doSync() error {
 	sp := stageFilePath(akd.user)
-	sf, err := os.OpenFile(sp, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
+	sf, err := as_user.OpenFile(akd.user, sp,
+		syscall.O_CREAT|syscall.O_TRUNC|syscall.O_WRONLY, 0600)
 	if err != nil {
 		return err
 	}
@@ -385,7 +331,7 @@ func (akd *SSHAuthorizedKeysDir) doSync() error {
 		return err
 	}
 
-	err = os.Rename(sp, authKeysFilePath(akd.user))
+	err = as_user.Rename(akd.user, sp, authKeysFilePath(akd.user))
 	if err != nil {
 		return err
 	}
@@ -405,19 +351,18 @@ func (ak *SSHAuthorizedKey) Disable() error {
 
 // Replace replaces the opened key with the supplied data.
 func (ak *SSHAuthorizedKey) Replace(keys []byte) error {
-	return asUser(ak.origin.user, func() error {
-		sp := stageFilePath(ak.origin.user)
-		sf, err := os.OpenFile(sp, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
-		if err != nil {
-			return err
-		}
-		defer os.Remove(sp)
-		if _, err = sf.Write(keys); err != nil {
-			return err
-		}
-		if err := sf.Close(); err != nil {
-			return err
-		}
-		return os.Rename(sp, ak.Path)
-	})
+	sp := stageFilePath(ak.origin.user)
+	sf, err := as_user.OpenFile(ak.origin.user, sp,
+		syscall.O_WRONLY|syscall.O_CREAT|syscall.O_TRUNC, 0600)
+	if err != nil {
+		return err
+	}
+	defer os.Remove(sp)
+	if _, err = sf.Write(keys); err != nil {
+		return err
+	}
+	if err := sf.Close(); err != nil {
+		return err
+	}
+	return as_user.Rename(ak.origin.user, sp, ak.Path)
 }
