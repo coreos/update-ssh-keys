@@ -278,6 +278,9 @@ func (akd *SSHAuthorizedKeysDir) Add(name string, keys []byte, replace, force bo
 	if err := validateKeys(keys); err != nil {
 		return fmt.Errorf("invalid keys: %v", err)
 	}
+	if !strings.HasSuffix(string(keys), "\n") {
+		keys = append(keys, byte('\n'))
+	}
 
 	return akd.add(name, keys, replace, force)
 }
