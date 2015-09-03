@@ -29,6 +29,8 @@ import (
 const (
 	DirNode = iota
 	FileNode
+
+	TestKey = `ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDRY8bv2nDBwXxfzzmfJ9Rx5EFMvEEWA12NM1mA+8ruJzmggYDjhFmTDyP/2uWjLUGn+0+GnBuC5L/JWlituzOCjboFN4WUblVlKygOVVI6zJxRhFNaIPUP/mEMe1lW7jyS7gwknEZ2SaYZbB95Hc9Z6MNZFYYGotJ3+ndof6qakxMfH3QCYk8EuP36rRBbPAP6LzKhTOaWOGmQpLmIRujLxWnj24wWNimf7mg8t7nzY18rzo9q8Plse8NwsNiAmVaI4JZphjp+Mey9qV8D8vz/qtBIHTxFmEEe02hnvUyqkRe+YKVHZQ8YRnHhbqScUPXHJuqViGsgxTiX2MGIgtgr vc@localhost`
 )
 
 type tree []node
@@ -124,6 +126,7 @@ func TestOpenClose(t *testing.T) {
 				{
 					path: filepath.Join(SSHDir, AuthorizedKeysFile),
 					typ:  FileNode, mode: 0600,
+					bytes: []byte(TestKey),
 				},
 			},
 			success: false,
@@ -136,6 +139,7 @@ func TestOpenClose(t *testing.T) {
 				{
 					path: filepath.Join(SSHDir, AuthorizedKeysFile),
 					typ:  FileNode, mode: 0600,
+					bytes: []byte(TestKey),
 				},
 			},
 			success: true,
@@ -148,6 +152,7 @@ func TestOpenClose(t *testing.T) {
 				{
 					path: filepath.Join(SSHDir, AuthorizedKeysFile),
 					typ:  FileNode, mode: 0600,
+					bytes: []byte(TestKey),
 				},
 				{
 					path: filepath.Join(SSHDir, AuthorizedKeysDir),
@@ -164,6 +169,7 @@ func TestOpenClose(t *testing.T) {
 				{
 					path: filepath.Join(SSHDir, AuthorizedKeysFile),
 					typ:  FileNode, mode: 0600,
+					bytes: []byte(TestKey),
 				},
 				{
 					path: filepath.Join(SSHDir, AuthorizedKeysDir),
@@ -257,7 +263,7 @@ func TestAddKey(t *testing.T) {
 				t.Errorf("%d: disable failed: %v", i, err)
 			}
 		}
-		err := akd.Add(tt.name, []byte("test"), tt.replace, tt.force)
+		err := akd.Add(tt.name, []byte(TestKey), tt.replace, tt.force)
 		if (err == nil) != tt.success {
 			t.Errorf("%d: expected %v got %v", i, tt.success, bool(err == nil))
 		}
@@ -295,7 +301,7 @@ func TestWalkKeys(t *testing.T) {
 		}
 
 		for _, n := range tt.names {
-			err := akd.Add(n, []byte("foobar"), false, false)
+			err := akd.Add(n, []byte(TestKey), false, false)
 			if err != nil {
 				t.Errorf("%d: add error: %v", i, err)
 			}
@@ -355,7 +361,7 @@ func TestOpenName(t *testing.T) {
 		}
 
 		for _, n := range tt.names {
-			err := akd.Add(n, []byte("foobar"), false, false)
+			err := akd.Add(n, []byte(TestKey), false, false)
 			if err != nil {
 				t.Errorf("%d: add error: %v", i, err)
 			}
@@ -406,7 +412,7 @@ func TestRemoveName(t *testing.T) {
 		}
 
 		for _, n := range tt.names {
-			err := akd.Add(n, []byte("foobar"), false, false)
+			err := akd.Add(n, []byte(TestKey), false, false)
 			if err != nil {
 				t.Errorf("%d: add error: %v", i, err)
 			}
@@ -433,7 +439,7 @@ func TestDisableName(t *testing.T) {
 	}
 	defer akd.Close()
 
-	if err := akd.Add(name, []byte("foobar"), false, false); err != nil {
+	if err := akd.Add(name, []byte(TestKey), false, false); err != nil {
 		t.Errorf("add error: %v", err)
 		return
 	}
@@ -483,7 +489,7 @@ func TestSync(t *testing.T) {
 			t.Errorf("rand read err: %v", err)
 			return
 		}
-		if err := akd.Add(strconv.Itoa(i), b, false, false); err != nil {
+		if err := akd.add(strconv.Itoa(i), b, false, false); err != nil {
 			t.Errorf("add error: %v", err)
 			return
 		}
@@ -538,7 +544,7 @@ func TestRemove(t *testing.T) {
 		}
 
 		for _, n := range tt.names {
-			err := akd.Add(n, []byte("foobar"), false, false)
+			err := akd.Add(n, []byte(TestKey), false, false)
 			if err != nil {
 				t.Errorf("%d: add error: %v", i, err)
 			}
@@ -575,7 +581,7 @@ func TestDisable(t *testing.T) {
 	}
 	defer akd.Close()
 
-	if err := akd.Add(name, []byte("foobar"), false, false); err != nil {
+	if err := akd.Add(name, []byte(TestKey), false, false); err != nil {
 		t.Errorf("add error: %v", err)
 		return
 	}
@@ -619,7 +625,7 @@ func TestReplace(t *testing.T) {
 	}
 	defer akd.Close()
 
-	if err := akd.Add(name, []byte("foobar"), false, false); err != nil {
+	if err := akd.Add(name, []byte(TestKey), false, false); err != nil {
 		t.Errorf("add error: %v", err)
 		return
 	}
