@@ -183,7 +183,7 @@ func (akd *SSHAuthorizedKeysDir) Close() error {
 	return akd.lock.Close()
 }
 
-// rename renames the authorized_keys dir to the supplied path.
+// rename renames the authorized keys dir to the supplied path.
 func (akd *SSHAuthorizedKeysDir) rename(to string) error {
 	err := as_user.Rename(akd.user, akd.path, to)
 	if err != nil {
@@ -262,7 +262,7 @@ func (akd *SSHAuthorizedKeysDir) Disable(name string) error {
 // Add adds the supplied key at name.
 // replace enables replacing keys already existing at name.
 // force enables adding keys to a disabled name, enabling it in the process.
-// Names starting wtih ".", and anything containing "/" are disallowed.
+// Names starting with ".", and anything containing "/" are disallowed.
 func (akd *SSHAuthorizedKeysDir) Add(name string, keys []byte, replace, force bool) error {
 	if strings.HasPrefix(name, ".") || strings.Contains(name, "/") {
 		return fmt.Errorf(`illegal name`)
