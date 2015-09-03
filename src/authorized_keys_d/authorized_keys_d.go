@@ -29,6 +29,8 @@ import (
 	"syscall"
 
 	"github.com/coreos/update-ssh-keys/authorized_keys_d/as_user"
+
+	"github.com/coreos/update-ssh-keys/third_party/golang.org/x/crypto/ssh"
 )
 
 const (
@@ -259,11 +261,29 @@ func (akd *SSHAuthorizedKeysDir) Disable(name string) error {
 	return ak.Disable()
 }
 
-// Add adds the supplied key at name.
+// validateKeys validates keys via ssh.ParseAuthorizedKey.
+func validateKeys(keys []byte) error {
+	_, _, _, rest, err := ssh.ParseAuthorizedKey(keys)
+	if err == nil && len(rest) > 0 {
+		err = validateKeys(rest)
+	}
+	return err
+}
+
+// Add adds the supplied key at name if the key is valid.
 // replace enables replacing keys already existing at name.
 // force enables adding keys to a disabled name, enabling it in the process.
 // Names starting with ".", and anything containing "/" are disallowed.
 func (akd *SSHAuthorizedKeysDir) Add(name string, keys []byte, replace, force bool) error {
+	if err := validateKeys(keys); err != nil {
+		return fmt.Errorf("invalid keys: %v", err)
+	}
+
+	return akd.add(name, keys, replace, force)
+}
+
+// add adds the supplied key like Add but without verifying the payload, useful for tests.
+func (akd *SSHAuthorizedKeysDir) add(name string, keys []byte, replace, force bool) error {
 	if strings.HasPrefix(name, ".") || strings.Contains(name, "/") {
 		return fmt.Errorf(`illegal name`)
 	}
