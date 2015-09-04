@@ -35,9 +35,15 @@ test_keys = {
     'bad':    'ssh-bad this-not-a-key core@bad',
 }
 
-fingerprints = {
+# for old versions of openssh
+md5_fingerprints = {
     'valid1': '10:5a:72:65:18:7a:2a:7d:00:81:4f:7e:ed:c8:1d:f9',
     'valid2': 'f3:f3:0b:10:86:f7:b2:55:73:92:53:88:68:17:36:f1',
+}
+
+fingerprints = {
+    'valid1': 'SHA256:yZ+o48h6quk9c+JVgJ/Zq4S5u4LUk6TSpneHKkmM9KY',
+    'valid2': 'SHA256:RP5k1AybZ1kollIAnpUavr1v1nfZ0yloKvI46AMDPkM',
 }
 
 class UpdateSshKeysTestCase(unittest.TestCase):
