@@ -54,6 +54,7 @@ class UpdateSshKeysTestCase(unittest.TestCase):
         self.ssh_dir = tempfile.mkdtemp(prefix='test_update_ssh_keys')
         self.env = os.environ.copy()
         self.env['_TEST_SSH_PATH'] = self.ssh_dir
+        self.env['_TEST_LOCK_PATH'] = '%s/lock' % self.ssh_dir
         self.pub_files = {}
 
         for name, text in test_keys.iteritems():
