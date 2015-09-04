@@ -112,7 +112,7 @@ class UpdateSshKeysTestCase(unittest.TestCase):
         self.assertTrue(out.startswith('Updated '))
         self.assertEquals(err, '')
         self.assertTrue(os.path.exists(
-                '%s/authorized_keys.d/old_authorized_keys' % self.ssh_dir))
+                '%s/authorized_keys.d/orig_authorized_keys' % self.ssh_dir))
         self.assertHasKeys('valid1', 'valid2', 'bad')
 
     def test_add_one_file(self):
