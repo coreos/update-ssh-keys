@@ -59,6 +59,9 @@ type SSHAuthorizedKey struct {
 
 // sshDirPath returns the path to the .ssh dir for the user.
 func sshDirPath(u *user.User) string {
+	if path := os.Getenv("_TEST_SSH_PATH"); path != "" {
+		return path
+	}
 	return filepath.Join(u.HomeDir, SSHDir)
 }
 
@@ -74,6 +77,9 @@ func authKeysDirPath(u *user.User) string {
 
 // lockFilePath returns the path to the lock file for the user.
 func lockFilePath(u *user.User) string {
+	if path := os.Getenv("_TEST_LOCK_PATH"); path != "" {
+		return path
+	}
 	return filepath.Join(u.HomeDir, lockFile)
 }
 
