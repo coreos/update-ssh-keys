@@ -1,0 +1,3 @@
+# If you manipulate the contents of third_party/, amend this accordingly.
+# pkg			version
+golang.org/x/crypto	aedad9a179ec1ea11b7064c57cbc6dc30d7724ec
