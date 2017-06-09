@@ -28,7 +28,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/coreos/update-ssh-keys/authorized_keys_d/as_user"
+	"github.com/coreos/update-ssh-keys/src/authorized_keys_d/as_user"
 )
 
 const (

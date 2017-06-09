@@ -23,7 +23,7 @@ import (
 	"os/user"
 	"strings"
 
-	keys "github.com/coreos/update-ssh-keys/authorized_keys_d"
+	keys "github.com/coreos/update-ssh-keys/src/authorized_keys_d"
 )
 
 var (
