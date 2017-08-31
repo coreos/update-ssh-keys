@@ -58,15 +58,11 @@ fn run() -> Result<()> {
     let config = config()
         .chain_err(|| format!("command line configuration"))?;
 
-    println!("{:?}", config);
-
     let user = users::get_user_by_name(&config.user)
         .ok_or(format!("failed to find user with name '{}'", config.user))?;
 
     let mut aks =  AuthorizedKeys::open(user, true)
         .chain_err(|| format!("failed to open authorized keys directory for user '{}'", config.user))?;
-
-    println!("akd: {:?}", aks);
 
     match config.command {
         Command::Add{name, force, replace, stdin, keyfiles} => {
