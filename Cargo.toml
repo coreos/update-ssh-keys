@@ -4,3 +4,8 @@ version = "0.1.0"
 authors = ["Stephen Demos <stephen.demos@coreos.com>"]
 
 [dependencies]
+error-chain = "0.10"
+users = "0.5"
+clap = "2.26"
+ssh-keys = { git = "https://github.com/sdemos/ssh-keys" }
+fs2 = "0.4"
