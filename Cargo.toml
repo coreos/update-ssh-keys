@@ -7,7 +7,7 @@ authors = ["Stephen Demos <stephen.demos@coreos.com>"]
 error-chain = "0.10"
 users = "0.5"
 clap = "2.26"
-ssh-keys = { git = "https://github.com/sdemos/ssh-keys" }
+openssh-keys = "0.1"
 fs2 = "0.4"
 
 [profile.release]
