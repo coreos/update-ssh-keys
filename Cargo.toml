@@ -12,4 +12,3 @@ fs2 = "0.4"
 
 [profile.release]
 lto = true
-panic = 'abort'
