@@ -123,13 +123,12 @@ fn config() -> Result<Config> {
     });
 
     // setup cli
-    // TODO(sdemos): help should print out the default user
-    // tried format! but it doesn't seem to like multi-line strings?
     let matches = App::new("update-ssh-keys")
         .version(crate_version!())
-        .help("Usage: update-ssh-keys [-l] [-u user] [-a name file1... | -d name]
+        .help(format!(
+r#"Usage: update-ssh-keys [-l] [-u user] [-a name file1... | -d name]
 Options:
-    -u USER     Update the given user's authorized_keys file [{}]
+    -u USER     Update the given user's authorized_keys file [{0}]
     -a NAME     Add the given keys, using the given name to identify them.
     -A NAME     Add the given keys, even if it was disabled with '-D'
     -n          When adding, don't replace an existing key with the given name.
@@ -139,12 +138,12 @@ Options:
     -h          This ;-)
 
 This tool provides a consistent way for different systems to add ssh public
-keys to a given user account, usually the default '${UPDATE_USER}' user.
+keys to a given user account, usually the default current user.
 If -a, -A, -d, nor -D are provided then the authorized_keys file is simply
 regenerated using the existing keys.
 
 With the -a option keys may be provided as files on the command line. If no
-files are provided with the -a option the keys will be read from stdin.")
+files are provided with the -a option the keys will be read from stdin."#, default_user).as_ref())
         .arg(Arg::with_name("user")
              .short("u")
              .help("Update the given user's authorized_keys file.")
