@@ -30,7 +30,6 @@ extern crate fs2;
 extern crate openssh_keys;
 extern crate users;
 
-#[allow(unused_doc_comment)]
 pub mod errors {
     error_chain!{
         foreign_links {
