@@ -22,7 +22,7 @@
 //! * disabling an authorized key by name
 //!
 //! the library will take care of the file locking that is expected from users
-//! of the authorized_keys.d directory.
+//! of the `authorized_keys.d` directory.
 
 #[macro_use]
 extern crate error_chain;
@@ -164,7 +164,7 @@ impl AuthorizedKeys {
             .chain_err(|| format!("failed to create staging directory '{:?}'", stage_dir))?;
 
         // write all the keys to the staging directory
-        for (_, keyset) in &self.keys {
+        for keyset in self.keys.values() {
             let keyfilename = stage_dir.join(&keyset.filename);
             let mut keyfile = File::create(&keyfilename)
                 .chain_err(|| format!("failed to create file '{:?}'", keyfilename))?;
@@ -203,7 +203,7 @@ impl AuthorizedKeys {
             .chain_err(|| format!("failed to create or truncate staging file '{:?}'", stage_filename))?;
 
         // write all the keys to the staging file
-        for (_, keyset) in &self.keys {
+        for keyset in self.keys.values() {
             // if the keyset is disabled, skip it
             if keyset.disabled {
                 continue
