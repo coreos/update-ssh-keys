@@ -56,10 +56,10 @@ quick_main!(run);
 
 fn run() -> Result<()> {
     let config = config()
-        .chain_err(|| format!("command line configuration"))?;
+        .chain_err(|| "command line configuration")?;
 
     let user = users::get_user_by_name(&config.user)
-        .ok_or(format!("failed to find user with name '{}'", config.user))?;
+        .ok_or_else(|| format!("failed to find user with name '{}'", config.user))?;
 
     let mut aks =  AuthorizedKeys::open(user, true)
         .chain_err(|| format!("failed to open authorized keys directory for user '{}'", config.user))?;
@@ -102,9 +102,9 @@ fn run() -> Result<()> {
     }
 
     aks.write()
-        .chain_err(|| format!("failed to update authorized keys directory"))?;
+        .chain_err(|| "failed to update authorized keys directory")?;
     aks.sync()
-        .chain_err(|| format!("failed to update authorized keys"))?;
+        .chain_err(|| "failed to update authorized keys")?;
 
     println!("Updated {:?}", aks.file);
 
@@ -182,15 +182,15 @@ files are provided with the -a option the keys will be read from stdin.")
             stdin: !matches.is_present("keys"),
             keyfiles: matches.values_of("keys").map(|vals| vals.map(|s| s.into()).collect::<Vec<_>>()).unwrap_or_default(),
         })
-        .or(matches.value_of("add-force").map(|name| Command::Add{
+        .or_else(|| matches.value_of("add-force").map(|name| Command::Add{
             name: name.into(),
             force: true,
             replace: !matches.is_present("no-replace"),
             stdin: !matches.is_present("keys"),
             keyfiles: matches.values_of("keys").map(|vals| vals.map(|s| s.into()).collect::<Vec<_>>()).unwrap_or_default(),
         }))
-        .or(matches.value_of("delete").map(|name| Command::Delete{name: name.into()}))
-        .or(matches.value_of("disable").map(|name| Command::Disable{name: name.into()}))
+        .or_else(|| matches.value_of("delete").map(|name| Command::Delete{name: name.into()}))
+        .or_else(|| matches.value_of("disable").map(|name| Command::Disable{name: name.into()}))
         .unwrap_or(if matches.is_present("list") { Command::List } else { Command::Sync });
 
     let user = matches.value_of("user")
