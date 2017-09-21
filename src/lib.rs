@@ -182,9 +182,9 @@ impl AuthorizedKeys {
         // destroy the old authorized keys directory and move the staging one to
         // that location. rename expects an existing, empty directory
         fs::remove_dir_all(&self.folder)
-            .chain_err(|| format!("failed to remove directory '{:?}'", stage_dir))?;
+            .chain_err(|| format!("failed to remove directory '{:?}'", self.folder))?;
         fs::create_dir(&self.folder)
-            .chain_err(|| format!("failed to create directory '{:?}'", stage_dir))?;
+            .chain_err(|| format!("failed to create directory '{:?}'", self.folder))?;
         fs::rename(&stage_dir, &self.folder)
             .chain_err(|| format!("failed to move '{:?}' to '{:?}'", stage_dir, self.folder))
     }
