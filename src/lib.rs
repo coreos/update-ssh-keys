@@ -93,34 +93,9 @@ fn stage_file(user: &User) -> PathBuf {
     ssh_dir(user).join(STAGE_FILE)
 }
 
-struct SwitchUserGuard {
-    uid: u32,
-    gid: u32,
-}
-
-impl Drop for SwitchUserGuard {
-    fn drop(&mut self) {
-        switch::set_effective_uid(self.uid).unwrap();
-        switch::set_effective_gid(self.gid).unwrap();
-    }
-}
-
-/// hilariously, the `users::switch::switch_user_group` function fails to
-/// successfully switch users because it switches the euid first and then
-/// doesn't have permissions to switch the egid. this is basically a
-/// reimplementation of that functionality except it works. I have a patch
-/// submitted to the rust-users projects, and we will switch if that gets merged
-/// - https://github.com/ogham/rust-users/pull/16
-fn switch_user(user: &User) -> Result<SwitchUserGuard> {
-    let current_state = SwitchUserGuard {
-        uid: users::get_effective_uid(),
-        gid: users::get_effective_gid(),
-    };
-
-    switch::set_effective_gid(user.primary_group_id())?;
-    switch::set_effective_uid(user.uid())?;
-
-    Ok(current_state)
+fn switch_user(user: &User) -> Result<switch::SwitchUserGuard> {
+    switch::switch_user_group(user.uid(), user.primary_group_id())
+        .chain_err(|| "failed to switch user/group")
 }
 
 #[derive(Debug)]
