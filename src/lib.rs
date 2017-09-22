@@ -32,6 +32,9 @@ extern crate users;
 
 pub mod errors {
     error_chain!{
+        links {
+            ParseError(::openssh_keys::errors::Error, ::openssh_keys::errors::ErrorKind);
+        }
         foreign_links {
             Io(::std::io::Error);
         }
@@ -55,7 +58,7 @@ use openssh_keys::PublicKey;
 use std::fs::{File, self};
 use fs2::FileExt;
 use std::path::{Path, PathBuf};
-use std::io::{BufReader, BufRead, Read, Write};
+use std::io::Write;
 use std::collections::HashMap;
 
 const SSH_DIR: &'static str = ".ssh";
@@ -265,31 +268,12 @@ impl AuthorizedKeys {
                     .ok_or_else(|| format!("failed to convert filename '{:?}' to string", path))?;
                 let from = File::open(&path)
                     .chain_err(|| format!("failed to open file {:?}", path))?;
-                let keyset = AuthorizedKeys::read_keys(from)?;
+                let keyset = PublicKey::read_keys(from)?;
                 keys.insert(name.to_string(), AuthorizedKeySet {
                     filename: name.to_string(),
                     disabled: keyset.is_empty(),
                     keys: keyset,
                 });
-            }
-        }
-        Ok(keys)
-    }
-
-    /// read_keys reads a list of public keys from a reader. it returns an error
-    /// of it can't read or parse any of the public keys in the list.
-    pub fn read_keys<R>(r: R) -> Result<Vec<PublicKey>>
-        where R: Read
-    {
-        let keybuf = BufReader::new(r);
-        // authorized_keys files are newline-separated lists of public keys
-        let mut keys = vec![];
-        for key in keybuf.lines() {
-            let key = key.chain_err(|| "failed to read public key")?;
-            // skip any empty lines and any comment lines (prefixed with '#')
-            if !key.is_empty() && !(key.trim().starts_with('#')) {
-                keys.push(PublicKey::parse(&key)
-                          .chain_err(|| "failed to parse public key")?);
             }
         }
         Ok(keys)
@@ -335,7 +319,7 @@ impl AuthorizedKeys {
                 keys.insert(PRESERVED_KEYS_FILE.to_string(), AuthorizedKeySet {
                     filename: PRESERVED_KEYS_FILE.to_string(),
                     disabled: false,
-                    keys: AuthorizedKeys::read_keys(file)?,
+                    keys: PublicKey::read_keys(file)?,
                 });
                 keys
             } else {

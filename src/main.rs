@@ -20,6 +20,7 @@
 extern crate clap;
 #[macro_use]
 extern crate error_chain;
+extern crate openssh_keys;
 extern crate users;
 
 extern crate update_ssh_keys;
@@ -28,6 +29,7 @@ use clap::{Arg, App};
 use users::get_current_username;
 
 use std::fs::File;
+use openssh_keys::PublicKey;
 
 use update_ssh_keys::*;
 use update_ssh_keys::errors::*;
@@ -68,14 +70,14 @@ fn run() -> Result<()> {
         Command::Add{name, force, replace, stdin, keyfiles} => {
             let keys = if stdin {
                 // read the keys from stdin
-                AuthorizedKeys::read_keys(std::io::stdin())?
+                PublicKey::read_keys(std::io::stdin())?
             } else {
                 // keys are in provided files
                 let mut keys = vec![];
                 for keyfile in keyfiles {
                     let file = File::open(&keyfile)
                         .chain_err(|| format!("failed to open keyfile '{:?}'", keyfile))?;
-                    keys.append(&mut AuthorizedKeys::read_keys(file)?);
+                    keys.append(&mut PublicKey::read_keys(file)?);
                 }
                 keys
             };
