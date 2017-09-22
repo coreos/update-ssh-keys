@@ -148,6 +148,45 @@ pub struct AuthorizedKeySet {
     pub keys: Vec<PublicKey>,
 }
 
+/// truncate_dir empties a directory and resets it's permission to the current
+/// umask. If the directory doesn't exists, it creates it. If the path exists
+/// but it's a file, it deletes the file and creates a directory there instead.
+fn truncate_dir<P: AsRef<Path>>(dir: P) -> Result<()> {
+    let dir = dir.as_ref();
+
+    if dir.exists() {
+        if dir.is_dir() {
+            fs::remove_dir_all(dir)
+                .chain_err(|| format!("failed to remove existing directory '{:?}'", dir))?;
+        } else if dir.is_file() {
+            fs::remove_file(dir)
+                .chain_err(|| format!("failed to remove existing file '{:?}'", dir))?;
+        } else {
+            return Err(format!("failed to remove existing path '{:?}': not a file or directory", dir).into())
+        }
+    }
+
+    fs::create_dir_all(dir)
+        .chain_err(|| format!("failed to create directory '{:?}'", dir))
+}
+
+/// replace_dir moves old to new by deleting new and renaming old. If new
+/// doesn't exist, it simply renames old to new. if new is a file, it deletes
+/// file and moves the directory. If old doesn't exist, nothing happens. If old
+/// is a file and not a directory, nothing happens.
+fn replace_dir<P: AsRef<Path>>(old: P, new: P) -> Result<()> {
+    let old = old.as_ref();
+    let new = new.as_ref();
+
+    if old.exists() && old.is_dir() {
+        truncate_dir(new)?;
+        fs::rename(old, new)
+            .chain_err(|| format!("failed to move '{:?}' to '{:?}'", old, new))?;
+    }
+
+    Ok(())
+}
+
 impl AuthorizedKeys {
     /// write writes all authorized_keys.d changes onto disk. it writes the
     /// current state to a staging directory and then moves that staging
@@ -158,12 +197,8 @@ impl AuthorizedKeys {
 
         // get our staging directory
         let stage_dir = stage_dir(&self.user);
-        if stage_dir.exists() {
-            fs::remove_dir_all(&stage_dir)
-                .chain_err(|| format!("failed to remove staging directory '{:?}'", stage_dir))?;
-        }
-        fs::create_dir(&stage_dir)
-            .chain_err(|| format!("failed to create staging directory '{:?}'", stage_dir))?;
+        truncate_dir(&stage_dir)
+            .chain_err(|| format!("failed to create staging directory"))?;
 
         // write all the keys to the staging directory
         for keyset in self.keys.values() {
@@ -182,14 +217,7 @@ impl AuthorizedKeys {
             }
         }
 
-        // destroy the old authorized keys directory and move the staging one to
-        // that location. rename expects an existing, empty directory
-        fs::remove_dir_all(&self.folder)
-            .chain_err(|| format!("failed to remove directory '{:?}'", self.folder))?;
-        fs::create_dir(&self.folder)
-            .chain_err(|| format!("failed to create directory '{:?}'", self.folder))?;
-        fs::rename(&stage_dir, &self.folder)
-            .chain_err(|| format!("failed to move '{:?}' to '{:?}'", stage_dir, self.folder))
+        replace_dir(&stage_dir, &self.folder)
     }
 
     /// sync writes all the keys we have to authorized_keys. it writes the
