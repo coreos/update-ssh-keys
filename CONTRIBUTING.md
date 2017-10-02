@@ -46,9 +46,7 @@ Thanks for your contributions!
 
 ### Coding Style
 
-CoreOS projects written in Go follow a set of style guidelines that we've documented
-[here](https://github.com/coreos/docs/tree/master/golang). Please follow them when
-working on your contributions.
+Code should be formatted according to the output of [rustfmt](https://github.com/rust-lang-nursery/rustfmt)
 
 ### Format of the Commit Message
 
