@@ -14,15 +14,17 @@
 
 //! update-ssh-keys library
 //!
-//! this library is meant to replace github.com/coreos/update-ssh-keys
-//! it will provide the functionality for:
+//! this library provides an interface for manipulating the authorized keys
+//! directory. in particular, it provides functionality for
 //! * listing authorized keys
 //! * adding authorized keys
 //! * removing an authorized key by name
 //! * disabling an authorized key by name
 //!
-//! the library will take care of the file locking that is expected from users
-//! of the `authorized_keys.d` directory.
+//! when the authorized keys directory is first opened, a file in the users home
+//! directory is locked. This lock is observed by this library and the golang
+//! analogue. When the directory is no longer being manipulated, the lock is
+//! released. See AuthorizedKeys::open for details.
 
 #[macro_use]
 extern crate error_chain;
@@ -286,7 +288,8 @@ impl AuthorizedKeys {
     /// authorized_keys directory on disk it reads all the keys from that. if
     /// there is no directory already and we are told to create it, we add the
     /// existing authorized keys file as an entry, if it exists.
-    /// /// before open actually does any of that, it switches it's uid for the span
+    ///
+    /// before open actually does any of that, it switches it's uid for the span
     /// of the function and then switched back. it also opens a file lock on the
     /// directory that other instances of `update-ssh-keys` will respect. the
     /// file lock will automatically close when this structure goes out of
