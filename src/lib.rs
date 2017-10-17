@@ -75,24 +75,24 @@ fn lock_file(user: &User) -> PathBuf {
     user.home_dir().join(LOCK_FILE)
 }
 
-fn ssh_dir(user: &User) -> PathBuf {
+fn default_ssh_dir(user: &User) -> PathBuf {
     user.home_dir().join(SSH_DIR)
 }
 
-fn authorized_keys_dir(user: &User) -> PathBuf {
-    ssh_dir(user).join(AUTHORIZED_KEYS_DIR)
+fn authorized_keys_dir<P: AsRef<Path>>(ssh_dir: P) -> PathBuf {
+    ssh_dir.as_ref().join(AUTHORIZED_KEYS_DIR)
 }
 
-fn authorized_keys_file(user: &User) -> PathBuf {
-    ssh_dir(user).join(AUTHORIZED_KEYS_FILE)
+fn authorized_keys_file<P: AsRef<Path>>(ssh_dir: P) -> PathBuf {
+    ssh_dir.as_ref().join(AUTHORIZED_KEYS_FILE)
 }
 
-fn stage_dir(user: &User) -> PathBuf {
-    ssh_dir(user).join(STAGE_DIR)
+fn stage_dir<P: AsRef<Path>>(ssh_dir: P) -> PathBuf {
+    ssh_dir.as_ref().join(STAGE_DIR)
 }
 
-fn stage_file(user: &User) -> PathBuf {
-    ssh_dir(user).join(STAGE_FILE)
+fn stage_file<P: AsRef<Path>>(ssh_dir: P) -> PathBuf {
+    ssh_dir.as_ref().join(STAGE_FILE)
 }
 
 fn switch_user(user: &User) -> Result<switch::SwitchUserGuard> {
@@ -132,8 +132,7 @@ impl FileLock {
 
 #[derive(Debug)]
 pub struct AuthorizedKeys {
-    pub file: PathBuf,
-    pub folder: PathBuf,
+    pub ssh_dir: PathBuf,
     pub keys: HashMap<String, AuthorizedKeySet>,
     pub user: User,
     lock: FileLock,
@@ -190,6 +189,22 @@ fn replace_dir<P: AsRef<Path>>(old: P, new: P) -> Result<()> {
 }
 
 impl AuthorizedKeys {
+    pub fn authorized_keys_dir(&self) -> PathBuf {
+        authorized_keys_dir(&self.ssh_dir)
+    }
+
+    pub fn authorized_keys_file(&self) -> PathBuf {
+        authorized_keys_file(&self.ssh_dir)
+    }
+
+    pub fn stage_dir(&self) -> PathBuf {
+        stage_dir(&self.ssh_dir)
+    }
+
+    pub fn stage_file(&self) -> PathBuf {
+        stage_file(&self.ssh_dir)
+    }
+
     /// write writes all authorized_keys.d changes onto disk. it writes the
     /// current state to a staging directory and then moves that staging
     /// directory to the authorized_keys.d path.
@@ -198,7 +213,7 @@ impl AuthorizedKeys {
         let _guard = switch_user(&self.user)?;
 
         // get our staging directory
-        let stage_dir = stage_dir(&self.user);
+        let stage_dir = self.stage_dir();
         truncate_dir(&stage_dir)
             .chain_err(|| format!("failed to create staging directory"))?;
 
@@ -219,18 +234,17 @@ impl AuthorizedKeys {
             }
         }
 
-        replace_dir(&stage_dir, &self.folder)
+        replace_dir(&stage_dir, &self.authorized_keys_dir())
     }
 
     /// sync writes all the keys we have to authorized_keys. it writes the
-    /// current state to a staging file and then moves that staging file to the
-    /// authorized_keys path
+    /// current state to a staging file and then moves that staging file to the /// authorized_keys path
     pub fn sync(&self) -> Result<()> {
         // switch users
         let _guard = switch_user(&self.user)?;
 
         // get our staging directory
-        let stage_filename = stage_file(&self.user);
+        let stage_filename = self.stage_file();
         let mut stage_file = File::create(&stage_filename)
             .chain_err(|| format!("failed to create or truncate staging file '{:?}'", stage_filename))?;
 
@@ -248,8 +262,8 @@ impl AuthorizedKeys {
 
         // destroy the old authorized keys file and move the staging one to that
         // location
-        fs::rename(&stage_filename, &self.file)
-            .chain_err(|| format!("failed to move '{:?}' to '{:?}'", stage_filename, self.file))
+        fs::rename(&stage_filename, &self.authorized_keys_file())
+            .chain_err(|| format!("failed to move '{:?}' to '{:?}'", stage_filename, self.authorized_keys_file()))
     }
 
     /// read_all_keys reads all of the authorized keys files in a given
@@ -303,21 +317,22 @@ impl AuthorizedKeys {
     /// any of the public keys in the existing files, if it failes to change
     /// users, if it failes to grab the lock, or if create is false but the
     /// directory doesn't exist.
-    pub fn open(user: User, create: bool) -> Result<Self> {
+    pub fn open(user: User, create: bool, ssh_dir: Option<PathBuf>) -> Result<Self> {
         // switch users
         let _guard = switch_user(&user)?;
         // make a new file lock and lock it
         let lock = FileLock::new(&lock_file(&user))?;
         lock.lock()?;
 
-        let akd = authorized_keys_dir(&user);
+        let ssh_dir = ssh_dir.unwrap_or_else(|| default_ssh_dir(&user));
+        let akd = authorized_keys_dir(&ssh_dir);
 
         let keys = if akd.is_dir() {
             // read the existing keysets from the dir
             AuthorizedKeys::read_all_keys(&akd)?
         } else if !akd.exists() && create {
             // read the existing keyset from the file
-            let filename = authorized_keys_file(&user);
+            let filename = authorized_keys_file(&ssh_dir);
             if filename.exists() {
                 let file = File::open(&filename)
                     .chain_err(|| format!("failed to open authorized keys file: '{:?}'", filename))?;
@@ -340,8 +355,7 @@ impl AuthorizedKeys {
         };
 
         Ok(AuthorizedKeys {
-            file: authorized_keys_file(&user),
-            folder: akd,
+            ssh_dir: ssh_dir,
             user: user,
             keys: keys,
             lock: lock,

@@ -26,19 +26,20 @@ extern crate users;
 extern crate update_ssh_keys;
 
 use clap::{Arg, App};
-use users::get_current_username;
-
-use std::fs::File;
 use openssh_keys::PublicKey;
-
+use std::fs::File;
+use std::path::PathBuf;
 use update_ssh_keys::*;
 use update_ssh_keys::errors::*;
+use users::get_current_username;
 
 #[derive(Clone, Debug)]
 struct Config {
     user: String,
+    ssh_dir: Option<PathBuf>,
     command: Command,
 }
+
 #[derive(Clone, Debug)]
 enum Command {
     Add {
@@ -63,7 +64,7 @@ fn run() -> Result<()> {
     let user = users::get_user_by_name(&config.user)
         .ok_or_else(|| format!("failed to find user with name '{}'", config.user))?;
 
-    let mut aks =  AuthorizedKeys::open(user, true)
+    let mut aks =  AuthorizedKeys::open(user, true, config.ssh_dir.clone())
         .chain_err(|| format!("failed to open authorized keys directory for user '{}'", config.user))?;
 
     match config.command {
@@ -108,7 +109,7 @@ fn run() -> Result<()> {
     aks.sync()
         .chain_err(|| "failed to update authorized keys")?;
 
-    println!("Updated {:?}", aks.file);
+    println!("Updated {:?}", aks.authorized_keys_file());
 
     Ok(())
 }
@@ -172,6 +173,11 @@ files are provided with the -a option the keys will be read from stdin."#, defau
              .short("D")
              .help("Disable the given set from being added with '-a'.")
              .takes_value(true))
+        .arg(Arg::with_name("ssh_dir")
+             .short("s")
+             .long("ssh-dir")
+             .takes_value(true)
+             .help("location of the ssh configuration directory (defaults to ~/.ssh)"))
         .arg(Arg::with_name("keys")
              .multiple(true))
         .get_matches();
@@ -197,8 +203,12 @@ files are provided with the -a option the keys will be read from stdin."#, defau
     let user = matches.value_of("user")
         .map_or(default_user, String::from);
 
+    let ssh_dir = matches.value_of("ssh_dir")
+        .map(PathBuf::from);
+
     Ok(Config {
         user: user,
+        ssh_dir: ssh_dir,
         command: command,
     })
 }
