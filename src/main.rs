@@ -84,13 +84,31 @@ fn run() -> Result<()> {
             };
             let res = aks.add_keys(&name, keys, replace, force);
             match res {
+                Ok(keys) => {
+                    println!("Adding/updating {}:", name);
+                    for key in &keys {
+                        println!("{}", key.to_fingerprint_string());
+                    }
+                },
                 Err(Error(ErrorKind::KeysDisabled(name), _)) => println!("Skipping add {} for {}, disabled.", name, config.user),
                 Err(Error(ErrorKind::KeysExist(_), _)) => println!("Skipping add {} for {}, already exists.", name, config.user),
-                _ => res.chain_err(|| "failed to add keys")?,
+                _ => {
+                    res.chain_err(|| "failed to add keys")?;
+                },
             }
         },
-        Command::Delete{name} => aks.remove_keys(&name),
-        Command::Disable{name} => aks.disable_keys(&name),
+        Command::Delete{name} => {
+            println!("Removing {}:", name);
+            for key in aks.remove_keys(&name) {
+                println!("{}", key.to_fingerprint_string());
+            }
+        },
+        Command::Disable{name} => {
+            println!("Disabling {}:", name);
+            for key in aks.disable_keys(&name) {
+                println!("{}", key.to_fingerprint_string());
+            }
+        },
         Command::List => {
             let keys = aks.get_all_keys();
             println!("All keys for {}:", config.user);
