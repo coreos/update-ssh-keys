@@ -392,9 +392,17 @@ impl AuthorizedKeys {
     /// true, it will replace existing keys. if force is true, it will replace
     /// disabled keys.
     ///
+    /// if the keys vector is empty, the function doesn't create an entry. empty
+    /// entries are reserved for representing disabled keysets.
+    ///
     /// add_keys returns an error if the key already exists and replace is
     /// false, or if the key is disabled and force is false
     pub fn add_keys(&mut self, name: &str, keys: Vec<PublicKey>, replace: bool, force: bool) -> Result<Vec<PublicKey>> {
+        // if we are passed an empty vector of keys, don't create a file
+        if keys.is_empty() {
+            return Ok(vec![]);
+        }
+
         if let Some(keyset) = self.keys.get(name) {
             if keyset.disabled && !force {
                 return Err(ErrorKind::KeysDisabled(name.to_string()).into());
