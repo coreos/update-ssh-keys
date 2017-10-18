@@ -1,7 +1,17 @@
 #!/usr/bin/python2.7
-# Copyright (c) 2013 The CoreOS Authors. All rights reserved.
-# Use of this source code is governed by a BSD-style license that can be
-# found in the LICENSE file.
+# Copyright 2017 CoreOS, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 import os
 import pwd
@@ -10,7 +20,7 @@ import subprocess
 import tempfile
 import unittest
 
-script_path = os.path.abspath('%s/../../bin/update-ssh-keys' % __file__)
+script_path = os.path.abspath('%s/../../target/debug/update-ssh-keys' % __file__)
 
 test_keys = {
     'valid1': 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDULTftpWMj4nD+7Ps'
@@ -36,8 +46,8 @@ test_keys = {
 }
 
 fingerprints = {
-    'valid1': '10:5a:72:65:18:7a:2a:7d:00:81:4f:7e:ed:c8:1d:f9',
-    'valid2': 'f3:f3:0b:10:86:f7:b2:55:73:92:53:88:68:17:36:f1',
+    'valid1': 'SHA256:yZ+o48h6quk9c+JVgJ/Zq4S5u4LUk6TSpneHKkmM9KY',
+    'valid2': 'SHA256:RP5k1AybZ1kollIAnpUavr1v1nfZ0yloKvI46AMDPkM ',
 }
 
 class UpdateSshKeysTestCase(unittest.TestCase):
@@ -47,7 +57,6 @@ class UpdateSshKeysTestCase(unittest.TestCase):
         self.user = user_info.pw_name
         self.ssh_dir = tempfile.mkdtemp(prefix='test_update_ssh_keys')
         self.env = os.environ.copy()
-        self.env['_TEST_SSH_PATH'] = self.ssh_dir
         self.pub_files = {}
 
         for name, text in test_keys.iteritems():
@@ -71,7 +80,7 @@ class UpdateSshKeysTestCase(unittest.TestCase):
             self.assertNotIn(test_keys[key], text)
 
     def run_script(self, *args, **kwargs):
-        cmd = [script_path, '-u', self.user]
+        cmd = [script_path, '-u', self.user, '--ssh-dir', self.ssh_dir]
         cmd.extend(args)
         return subprocess.Popen(cmd, env=self.env,
                                 stdout=subprocess.PIPE,
@@ -98,7 +107,6 @@ class UpdateSshKeysTestCase(unittest.TestCase):
         with open('%s/authorized_keys' % self.ssh_dir, 'w') as fd:
             fd.write('%s\n' % test_keys['valid1'])
             fd.write('%s\n' % test_keys['valid2'])
-            fd.write('%s\n' % test_keys['bad'])
         proc = self.run_script()
         out, err = proc.communicate()
         self.assertEquals(proc.returncode, 0)
@@ -106,7 +114,7 @@ class UpdateSshKeysTestCase(unittest.TestCase):
         self.assertEquals(err, '')
         self.assertTrue(os.path.exists(
                 '%s/authorized_keys.d/old_authorized_keys' % self.ssh_dir))
-        self.assertHasKeys('valid1', 'valid2', 'bad')
+        self.assertHasKeys('valid1', 'valid2')
 
     def test_add_one_file(self):
         proc = self.run_script('-a', 'one', self.pub_files['valid1'])
@@ -187,19 +195,6 @@ class UpdateSshKeysTestCase(unittest.TestCase):
         self.assertEquals(err, '')
         self.assertHasKeys('valid1')
 
-    def test_add_and_del(self):
-        self.test_add_one_file()
-        proc = self.run_script(
-                '-d', 'one', '-a', 'two', self.pub_files['valid2'])
-        out, err = proc.communicate()
-        self.assertEquals(proc.returncode, 0)
-        self.assertTrue(out.startswith('Adding'))
-        self.assertIn('\nRemoving', out)
-        self.assertIn(fingerprints['valid1'], out)
-        self.assertIn(fingerprints['valid2'], out)
-        self.assertEquals(err, '')
-        self.assertHasKeys('valid2')
-
     def test_disable(self):
         self.test_add_two()
         proc = self.run_script('-D', 'two')
@@ -231,10 +226,8 @@ class UpdateSshKeysTestCase(unittest.TestCase):
         proc = self.run_script('-a', 'bad', self.pub_files['bad'])
         out, err = proc.communicate()
         self.assertEquals(proc.returncode, 1)
-        self.assertTrue(out.startswith('Adding'))
         self.assertNotIn('Updated', out)
-        # ssh-keygen writes errors to stdout, not stderr
-        self.assertIn('not a public key file', out)
+        self.assertIn('failed to parse public key', err)
         self.assertHasKeys('valid1')
 
 
