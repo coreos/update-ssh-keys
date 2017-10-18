@@ -1,3 +1,2 @@
-bin/
-gopath/
-*.swp
+/target/
+**/*.rs.bk
