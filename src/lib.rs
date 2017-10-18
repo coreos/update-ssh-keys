@@ -49,6 +49,10 @@ pub mod errors {
                 description("keys already exist")
                 display("keys with name '{}' already exist", name)
             }
+            NoKeysFound(ssh_dir: String) {
+                description("no keys found")
+                display("update-ssh-keys: no keys found in {}", ssh_dir)
+            }
         }
     }
 }
@@ -241,6 +245,12 @@ impl AuthorizedKeys {
     /// current state to a staging file and then moves that staging file to the
     /// authorized_keys path
     pub fn sync(&self) -> Result<()> {
+        // if we have no keys, don't overwrite the authorized_keys file.
+        // if the user wants to delete all their ssh keys, we won't help them
+        if self.keys.is_empty() {
+            return Err(ErrorKind::NoKeysFound(format!("{:?}", self.authorized_keys_dir())).into());
+        }
+
         // switch users
         let _guard = switch_user(&self.user)?;
 
