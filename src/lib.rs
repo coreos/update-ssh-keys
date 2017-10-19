@@ -24,7 +24,7 @@
 //! when the authorized keys directory is first opened, a file in the users home
 //! directory is locked. This lock is observed by this library and the golang
 //! analogue. When the directory is no longer being manipulated, the lock is
-//! released. See AuthorizedKeys::open for details.
+//! released. See `AuthorizedKeys::open` for details.
 
 #[macro_use]
 extern crate error_chain;
@@ -153,7 +153,7 @@ pub struct AuthorizedKeySet {
     pub keys: Vec<PublicKey>,
 }
 
-/// truncate_dir empties a directory and resets it's permission to the current
+/// `truncate_dir` empties a directory and resets it's permission to the current
 /// umask. If the directory doesn't exists, it creates it. If the path exists
 /// but it's a file, it deletes the file and creates a directory there instead.
 fn truncate_dir<P: AsRef<Path>>(dir: P) -> Result<()> {
@@ -175,7 +175,7 @@ fn truncate_dir<P: AsRef<Path>>(dir: P) -> Result<()> {
         .chain_err(|| format!("failed to create directory '{:?}'", dir))
 }
 
-/// replace_dir moves old to new by deleting new and renaming old. If new
+/// `replace_dir` moves old to new by deleting new and renaming old. If new
 /// doesn't exist, it simply renames old to new. if new is a file, it deletes
 /// file and moves the directory. If old doesn't exist, nothing happens. If old
 /// is a file and not a directory, nothing happens.
@@ -219,7 +219,7 @@ impl AuthorizedKeys {
         // get our staging directory
         let stage_dir = self.stage_dir();
         truncate_dir(&stage_dir)
-            .chain_err(|| format!("failed to create staging directory"))?;
+            .chain_err(|| format!("failed to create staging directory '{}'", stage_dir.display()))?;
 
         // write all the keys to the staging directory
         for keyset in self.keys.values() {
