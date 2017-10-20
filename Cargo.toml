@@ -10,5 +10,14 @@ fs2 = "0.4"
 openssh-keys = "0.1"
 users = "0.6"
 
+[[bin]]
+name = "update-ssh-keys"
+path = "src/main.rs"
+doc = false
+
+[lib]
+path = "src/lib.rs"
+doc = true
+
 [profile.release]
 lto = true
