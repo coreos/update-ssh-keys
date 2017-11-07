@@ -7,7 +7,7 @@ authors = ["Stephen Demos <stephen.demos@coreos.com>"]
 clap = "2.26"
 error-chain = { version = "0.11", default-features = false }
 fs2 = "0.4"
-openssh-keys = "0.1"
+openssh-keys = "0.2"
 users = "0.6"
 
 [[bin]]
