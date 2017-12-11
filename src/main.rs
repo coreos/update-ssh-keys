@@ -26,7 +26,6 @@ extern crate users;
 extern crate update_ssh_keys;
 
 use clap::{Arg, App};
-use openssh_keys::PublicKey;
 use std::fs::File;
 use std::path::PathBuf;
 use update_ssh_keys::*;
@@ -71,14 +70,14 @@ fn run() -> Result<()> {
         Command::Add{name, force, replace, stdin, keyfiles} => {
             let keys = if stdin {
                 // read the keys from stdin
-                PublicKey::read_keys(std::io::stdin())?
+                AuthorizedKeys::read_keys(std::io::stdin())?
             } else {
                 // keys are in provided files
                 let mut keys = vec![];
                 for keyfile in keyfiles {
                     let file = File::open(&keyfile)
                         .chain_err(|| format!("failed to open keyfile '{:?}'", keyfile))?;
-                    keys.append(&mut PublicKey::read_keys(file)?);
+                    keys.append(&mut AuthorizedKeys::read_keys(file)?);
                 }
                 keys
             };
@@ -87,7 +86,9 @@ fn run() -> Result<()> {
                 Ok(keys) => {
                     println!("Adding/updating {}:", name);
                     for key in &keys {
-                        println!("{}", key.to_fingerprint_string());
+                        if let AuthorizedKeyEntry::Valid{ref key} = *key {
+                            println!("{}", key.to_fingerprint_string());
+                        }
                     }
                 },
                 Err(Error(ErrorKind::KeysDisabled(name), _)) => println!("Skipping add {} for {}, disabled.", name, config.user),
@@ -100,13 +101,17 @@ fn run() -> Result<()> {
         Command::Delete{name} => {
             println!("Removing {}:", name);
             for key in aks.remove_keys(&name) {
-                println!("{}", key.to_fingerprint_string());
+                if let AuthorizedKeyEntry::Valid{ref key} = key {
+                    println!("{}", key.to_fingerprint_string());
+                }
             }
         },
         Command::Disable{name} => {
             println!("Disabling {}:", name);
             for key in aks.disable_keys(&name) {
-                println!("{}", key.to_fingerprint_string());
+                if let AuthorizedKeyEntry::Valid{ref key} = key {
+                    println!("{}", key.to_fingerprint_string());
+                }
             }
         },
         Command::List => {
@@ -115,7 +120,9 @@ fn run() -> Result<()> {
             for (name, keyset) in keys {
                 println!("{}:", name);
                 for key in &keyset.keys {
-                    println!("{}", key.to_fingerprint_string())
+                    if let AuthorizedKeyEntry::Valid{ref key} = *key {
+                        println!("{}", key.to_fingerprint_string())
+                    }
                 }
             }
         },

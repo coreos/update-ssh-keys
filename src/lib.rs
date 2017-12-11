@@ -64,7 +64,7 @@ use openssh_keys::PublicKey;
 use std::fs::{File, self};
 use fs2::FileExt;
 use std::path::{Path, PathBuf};
-use std::io::Write;
+use std::io::{Write, BufReader, BufRead, Read};
 use std::collections::HashMap;
 
 const SSH_DIR: &'static str = ".ssh";
@@ -150,7 +150,13 @@ impl Drop for AuthorizedKeys {
 pub struct AuthorizedKeySet {
     pub filename: String,
     pub disabled: bool,
-    pub keys: Vec<PublicKey>,
+    pub keys: Vec<AuthorizedKeyEntry>,
+}
+
+#[derive(Clone, Debug)]
+pub enum AuthorizedKeyEntry {
+    Valid { key: PublicKey },
+    Invalid { key: String },
 }
 
 /// `truncate_dir` empties a directory and resets it's permission to the current
@@ -233,8 +239,12 @@ impl AuthorizedKeys {
                 continue
             }
             for key in &keyset.keys {
-                write!(keyfile, "{}\n", key)
-                    .chain_err(|| format!("failed to write to file '{:?}'", keyfilename))?;
+                match *key {
+                    AuthorizedKeyEntry::Valid{ref key} => write!(keyfile, "{}\n", key)
+                        .chain_err(|| format!("failed to write to file '{:?}'", keyfilename))?,
+                    AuthorizedKeyEntry::Invalid{ref key} => write!(keyfile, "{}\n", key)
+                        .chain_err(|| format!("failed to write to file '{:?}'", keyfilename))?,
+                }
             }
         }
 
@@ -270,8 +280,11 @@ impl AuthorizedKeys {
                 continue
             }
             for key in &keyset.keys {
-                write!(stage_file, "{}\n", key)
-                    .chain_err(|| format!("failed to write to file '{:?}'", stage_filename))?;
+                // only write the key to authorized_keys if it is valid
+                if let AuthorizedKeyEntry::Valid{ref key} = *key {
+                    write!(stage_file, "{}\n", key)
+                        .chain_err(|| format!("failed to write to file '{:?}'", stage_filename))?;
+                }
             }
         }
 
@@ -302,12 +315,37 @@ impl AuthorizedKeys {
                     .ok_or_else(|| format!("failed to convert filename '{:?}' to string", path))?;
                 let from = File::open(&path)
                     .chain_err(|| format!("failed to open file {:?}", path))?;
-                let keyset = PublicKey::read_keys(from)?;
+                let keyset = AuthorizedKeys::read_keys(from)?;
                 keys.insert(name.to_string(), AuthorizedKeySet {
                     filename: name.to_string(),
                     disabled: keyset.is_empty(),
                     keys: keyset,
                 });
+            }
+        }
+        Ok(keys)
+    }
+
+    /// read_keys reads keys from a file in the authorized_keys file format,
+    /// as described by the sshd man page. it logs a warning if it fails to
+    /// parse any of the keys.
+    pub fn read_keys<R>(r: R) -> Result<Vec<AuthorizedKeyEntry>>
+        where R: Read
+    {
+        let keybuf = BufReader::new(r);
+        // authorized_keys files are newline-separated lists of public keys
+        let mut keys = vec![];
+        for key in keybuf.lines() {
+            let key = key.chain_err(|| "failed to read public key")?;
+            // skip any empty lines and any comment lines (prefixed with '#')
+            if !key.is_empty() && !(key.trim().starts_with('#')) {
+                match PublicKey::parse(&key) {
+                    Ok(pkey) => keys.push(AuthorizedKeyEntry::Valid{key: pkey}),
+                    Err(e) => {
+                        println!("warning: failed to parse public key \"{}\": {}, omitting from authorized_keys", key, e);
+                        keys.push(AuthorizedKeyEntry::Invalid{key: key})
+                    },
+                };
             }
         }
         Ok(keys)
@@ -355,7 +393,7 @@ impl AuthorizedKeys {
                 keys.insert(PRESERVED_KEYS_FILE.to_string(), AuthorizedKeySet {
                     filename: PRESERVED_KEYS_FILE.to_string(),
                     disabled: false,
-                    keys: PublicKey::read_keys(file)?,
+                    keys: AuthorizedKeys::read_keys(file)?,
                 });
                 keys
             } else {
@@ -397,7 +435,7 @@ impl AuthorizedKeys {
     ///
     /// add_keys returns an error if the key already exists and replace is
     /// false, or if the key is disabled and force is false
-    pub fn add_keys(&mut self, name: &str, keys: Vec<PublicKey>, replace: bool, force: bool) -> Result<Vec<PublicKey>> {
+    pub fn add_keys(&mut self, name: &str, keys: Vec<AuthorizedKeyEntry>, replace: bool, force: bool) -> Result<Vec<AuthorizedKeyEntry>> {
         // if we are passed an empty vector of keys, don't create a file
         if keys.is_empty() {
             return Ok(vec![]);
@@ -419,14 +457,14 @@ impl AuthorizedKeys {
     }
 
     /// remove_keys removes the keyset with the given name.
-    pub fn remove_keys(&mut self, name: &str) -> Vec<PublicKey> {
+    pub fn remove_keys(&mut self, name: &str) -> Vec<AuthorizedKeyEntry> {
         self.keys.remove(name).unwrap_or_default().keys
     }
 
     /// disable_keys disables keys with the given name. they can't be added
     /// again unless force is set to true when adding the set. disable_keys will
     /// succeed in disabling the key even if the key doesn't currently exist.
-    pub fn disable_keys(&mut self, name: &str) -> Vec<PublicKey> {
+    pub fn disable_keys(&mut self, name: &str) -> Vec<AuthorizedKeyEntry> {
         if let Some(keyset) = self.keys.get_mut(name) {
             let keys = keyset.keys.clone();
             keyset.disabled = true;

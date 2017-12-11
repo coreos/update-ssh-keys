@@ -225,9 +225,9 @@ class UpdateSshKeysTestCase(unittest.TestCase):
         self.test_add_one_file()
         proc = self.run_script('-a', 'bad', self.pub_files['bad'])
         out, err = proc.communicate()
-        self.assertEquals(proc.returncode, 1)
-        self.assertNotIn('Updated', out)
-        self.assertIn('failed to parse public key', err)
+        self.assertEquals(proc.returncode, 0)
+        self.assertIn('warning', out)
+        self.assertIn('failed to parse public key', out)
         self.assertHasKeys('valid1')
 
 
