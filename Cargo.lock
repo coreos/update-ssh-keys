@@ -120,7 +120,7 @@ dependencies = [
 
 [[package]]
 name = "openssh-keys"
-version = "0.2.3"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "base64 0.9.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -199,7 +199,7 @@ dependencies = [
  "clap 2.32.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "error-chain 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "fs2 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "openssh-keys 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "openssh-keys 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "users 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -252,7 +252,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum generic-array 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ef25c5683767570c2bbd7deba372926a55eaae9982d7726ee2a1050239d45b9d"
 "checksum libc 0.2.42 (registry+https://github.com/rust-lang/crates.io-index)" = "b685088df2b950fccadf07a7187c8ef846a959c142338a48f9dc0b94517eb5f1"
 "checksum md-5 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "9402eaae33a9e144ce18ef488a0e4ca19869673c7bcdbbfe2030fdc3f84211cd"
-"checksum openssh-keys 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "e55e83de965fcec7fd43b9168b79961d2d3cf16f5f27f14a2b4b2a393a476e35"
+"checksum openssh-keys 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "06d5c6894dda58e664b418862c53c4dcf5774cdb3c6378352d3ec0a88ee01a69"
 "checksum redox_syscall 0.1.40 (registry+https://github.com/rust-lang/crates.io-index)" = "c214e91d3ecf43e9a4e41e578973adeb14b474f2bee858742d127af75a0112b1"
 "checksum redox_termios 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "7e891cfe48e9100a70a3b6eb652fef28920c117d366339687bd5576160db0f76"
 "checksum safemem 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "e27a8b19b835f7aea908818e871f5cc3a5a186550c30773be987e155e8163d8f"
