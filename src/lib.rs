@@ -74,6 +74,7 @@ const PRESERVED_KEYS_FILE: &'static str = "old_authorized_keys";
 const LOCK_FILE: &'static str = ".authorized_keys.d.lock";
 const STAGE_FILE: &'static str = ".authorized_keys.d.stage_file";
 const STAGE_DIR: &'static str = ".authorized_keys.d.stage_dir";
+const STAGE_OLD_DIR: &str = ".authorized_keys.d.old";
 
 fn lock_file(user: &User) -> PathBuf {
     user.home_dir().join(LOCK_FILE)
@@ -93,6 +94,10 @@ fn authorized_keys_file<P: AsRef<Path>>(ssh_dir: P) -> PathBuf {
 
 fn stage_dir<P: AsRef<Path>>(ssh_dir: P) -> PathBuf {
     ssh_dir.as_ref().join(STAGE_DIR)
+}
+
+fn stage_old_dir<P: AsRef<Path>>(ssh_dir: P) -> PathBuf {
+    ssh_dir.as_ref().join(STAGE_OLD_DIR)
 }
 
 fn stage_file<P: AsRef<Path>>(ssh_dir: P) -> PathBuf {
@@ -181,18 +186,44 @@ fn truncate_dir<P: AsRef<Path>>(dir: P) -> Result<()> {
         .chain_err(|| format!("failed to create directory '{:?}'", dir))
 }
 
-/// `replace_dir` moves old to new by deleting new and renaming old. If new
-/// doesn't exist, it simply renames old to new. if new is a file, it deletes
-/// file and moves the directory. If old doesn't exist, nothing happens. If old
-/// is a file and not a directory, nothing happens.
-fn replace_dir<P: AsRef<Path>>(old: P, new: P) -> Result<()> {
+/// `replace_dir` moves old to new safely.
+///
+/// It takes the following steps to do so:
+/// 1. Truncating stage, in case a stale staging directory is still around.
+/// 1. Moving new to stage.
+/// 1. Moving old to new.
+/// 1. Truncating stage again to clean up.
+/// If new doesn't exist, it simply renames old to new. if new is a file, it
+/// deletes the file and moves the directory. If old doesn't exist, nothing
+/// happens. If old is a file and not a directory, nothing happens.
+fn replace_dir<P: AsRef<Path>>(old: P, new: P, stage: P) -> Result<()> {
     let old = old.as_ref();
     let new = new.as_ref();
+    let stage = stage.as_ref();
 
     if old.exists() && old.is_dir() {
-        truncate_dir(new)?;
+        // sync the old directory to ensure our changes have been persisted
+        let old_as_file = File::open(old)
+            .chain_err(|| format!("failed to open old dir '{}' for syncing", old.display()))?;
+        old_as_file.sync_all()
+            .chain_err(|| format!("failed to sync old dir '{}'", old.display()))?;
+
+        truncate_dir(stage)?;
+        if new.exists() {
+            fs::rename(new, stage)
+                .chain_err(|| format!("failed to move '{:?}' to '{:?}'", new, stage))?;
+        }
         fs::rename(old, new)
             .chain_err(|| format!("failed to move '{:?}' to '{:?}'", old, new))?;
+
+        let parent_path = new.parent()
+            .ok_or_else(|| format!("failed to sync parent directory of '{}'", new.display()))?;
+        let parent_dir = File::open(parent_path)
+            .chain_err(|| format!("failed to open dir '{}' for syncing", parent_path.display()))?;
+        parent_dir.sync_all()
+            .chain_err(|| format!("failed to sync dir '{}'", parent_path.display()))?;
+
+        truncate_dir(stage)?;
     }
 
     Ok(())
@@ -209,6 +240,10 @@ impl AuthorizedKeys {
 
     pub fn stage_dir(&self) -> PathBuf {
         stage_dir(&self.ssh_dir)
+    }
+
+    fn stage_old_dir(&self) -> PathBuf {
+        stage_old_dir(&self.ssh_dir)
     }
 
     pub fn stage_file(&self) -> PathBuf {
@@ -246,9 +281,12 @@ impl AuthorizedKeys {
                         .chain_err(|| format!("failed to write to file '{:?}'", keyfilename))?,
                 }
             }
+
+            keyfile.sync_all()
+                .chain_err(|| format!("failed to sync file '{:?}'", keyfilename))?;
         }
 
-        replace_dir(&stage_dir, &self.authorized_keys_dir())
+        replace_dir(&stage_dir, &self.authorized_keys_dir(), &self.stage_old_dir())
     }
 
     /// sync writes all the keys we have to authorized_keys. it writes the
@@ -288,10 +326,23 @@ impl AuthorizedKeys {
             }
         }
 
+        stage_file.sync_all()
+            .chain_err(|| format!("failed to sync file '{:?}'", stage_filename))?;
+        drop(stage_file);
+
         // destroy the old authorized keys file and move the staging one to that
         // location
         fs::rename(&stage_filename, &self.authorized_keys_file())
-            .chain_err(|| format!("failed to move '{:?}' to '{:?}'", stage_filename, self.authorized_keys_file()))
+            .chain_err(|| format!("failed to move '{:?}' to '{:?}'", stage_filename, self.authorized_keys_file()))?;
+
+        let parent_path = stage_filename.parent()
+            .ok_or_else(|| format!("failed to sync parent directory of '{}'", stage_filename.display()))?;
+        let parent_dir_file = File::open(parent_path)
+            .chain_err(|| format!("failed to open '{}' for syncing", parent_path.display()))?;
+        parent_dir_file.sync_all()
+            .chain_err(|| format!("failed to sync '{}'", parent_path.display()))?;
+
+        Ok(())
     }
 
     /// read_all_keys reads all of the authorized keys files in a given
