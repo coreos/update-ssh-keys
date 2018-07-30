@@ -2,7 +2,7 @@ language: rust
 
 rust:
   - 1.26.0              # minimum supported toolchain
-  - nightly-2017-10-08  # pinned toolchain for clippy
+  - nightly-2018-07-24  # pinned toolchain for clippy
   - stable
   - beta
   - nightly
@@ -13,12 +13,11 @@ matrix:
 
 env:
   global:
-    - CLIPPY_VERSION=0.0.165
-    - CLIPPY_RUST_VERSION=nightly-2017-10-08
+    - CLIPPY_RUST_VERSION=nightly-2018-07-24
 
 before_script:
   - bash -c 'if [[ "$TRAVIS_RUST_VERSION" == "$CLIPPY_RUST_VERSION" ]]; then
-      cargo install clippy --vers $CLIPPY_VERSION --force;
+      rustup component add clippy-preview;
     fi'
 
 script:
