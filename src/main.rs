@@ -232,8 +232,8 @@ files are provided with the -a option the keys will be read from stdin."#, defau
         .map(PathBuf::from);
 
     Ok(Config {
-        user: user,
-        ssh_dir: ssh_dir,
-        command: command,
+        user,
+        ssh_dir,
+        command,
     })
 }
