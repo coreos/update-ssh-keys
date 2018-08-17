@@ -1,7 +1,12 @@
 [package]
 name = "update-ssh-keys"
-version = "0.2.1"
-authors = ["Stephen Demos <stephen.demos@coreos.com>"]
+authors = [ "Stephen Demos <stephen.demos@coreos.com>",
+            "Luca Bruno <lucab@debian.org>" ]
+license = "Apache-2.0"
+repository = "https://github.com/coreos/update-ssh-keys"
+documentation = "https://docs.rs/update-ssh-keys"
+description = "A tool for managing authorized SSH keys"
+version = "0.2.2-alpha.0"
 
 [dependencies]
 clap = "2.26"
@@ -21,3 +26,13 @@ doc = true
 
 [profile.release]
 lto = true
+
+[package.metadata.release]
+sign-commit = true
+upload-doc = false
+disable-push = true
+disable-publish = true
+pre-release-commit-message = "cargo: update-ssh-keys release {{version}}"
+pro-release-commit-message = "cargo: version bump to {{version}}"
+tag-message = "update-ssh-keys v{{version}}"
+tag-prefix = "v"
