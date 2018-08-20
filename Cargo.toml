@@ -13,7 +13,7 @@ clap = "2.26"
 error-chain = { version = "0.12", default-features = false }
 fs2 = "0.4"
 openssh-keys = "0.3"
-users = "0.6"
+users = "0.7"
 
 [[bin]]
 name = "update-ssh-keys"
