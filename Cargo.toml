@@ -6,14 +6,16 @@ license = "Apache-2.0"
 repository = "https://github.com/coreos/update-ssh-keys"
 documentation = "https://docs.rs/update-ssh-keys"
 description = "A tool for managing authorized SSH keys"
-version = "0.3.1-alpha.0"
+version = "0.4.0-alpha.0"
 
 [dependencies]
+# Private dependencies.
 clap = "2.26"
-error-chain = { version = "0.12", default-features = false }
 fs2 = "0.4"
+# Public dependencies, exposed through library API.
+error-chain = { version = "0.12", default-features = false }
 openssh-keys = "0.3"
-users = "0.7"
+users = "0.8"
 
 [[bin]]
 name = "update-ssh-keys"
