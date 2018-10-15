@@ -1,7 +1,7 @@
 language: rust
 
 rust:
-  - 1.26.0              # minimum supported toolchain
+  - 1.28.0              # minimum supported toolchain
   - nightly-2018-07-24  # pinned toolchain for clippy
   - stable
   - beta
