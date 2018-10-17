@@ -140,13 +140,14 @@ fn run() -> Result<()> {
 }
 
 fn config() -> Result<Config> {
-    // get the default user by figuring out the current user if the current user
-    // is root (or doesn't exist) then use core
+    // get the default user by figuring out the current user; if the current user
+    // is root (or doesn't exist) then use 'core'.
     let default_user = get_current_username().map_or("core".into(), |u| {
-        if u == "root" {
+        let name = u.to_string_lossy();
+        if name == "root" {
             "core".into()
         } else {
-            u
+            name.into_owned()
         }
     });
 
