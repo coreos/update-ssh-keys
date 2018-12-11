@@ -121,7 +121,7 @@ impl Drop for FileLock {
 }
 
 impl FileLock {
-    fn new(path: &Path) -> Result<Self> {
+    fn try_new(path: &Path) -> Result<Self> {
         Ok(FileLock {
             lock: File::create(path)
                 .chain_err(|| format!("failed to create lock file: {:?}", path))?,
@@ -425,7 +425,7 @@ impl AuthorizedKeys {
         // switch users
         let _guard = switch_user(&user)?;
         // make a new file lock and lock it
-        let lock = FileLock::new(&lock_file(&user))?;
+        let lock = FileLock::try_new(&lock_file(&user))?;
         lock.lock()?;
 
         let ssh_dir = ssh_dir.unwrap_or_else(|| default_ssh_dir(&user));
