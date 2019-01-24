@@ -11,7 +11,7 @@ name = "atty"
 version = "0.2.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "libc 0.2.47 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libc 0.2.48 (registry+https://github.com/rust-lang/crates.io-index)",
  "termion 1.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "winapi 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -95,7 +95,7 @@ name = "fs2"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "libc 0.2.47 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libc 0.2.48 (registry+https://github.com/rust-lang/crates.io-index)",
  "winapi 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -109,7 +109,7 @@ dependencies = [
 
 [[package]]
 name = "libc"
-version = "0.2.47"
+version = "0.2.48"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
@@ -173,7 +173,7 @@ name = "termion"
 version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "libc 0.2.47 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libc 0.2.48 (registry+https://github.com/rust-lang/crates.io-index)",
  "redox_syscall 0.1.51 (registry+https://github.com/rust-lang/crates.io-index)",
  "redox_termios 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -212,7 +212,7 @@ name = "users"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "libc 0.2.47 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libc 0.2.48 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -254,7 +254,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum fake-simd 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "e88a8acf291dafb59c2d96e8f59828f3838bb1a70398823ade51a84de6a6deed"
 "checksum fs2 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)" = "9564fc758e15025b46aa6643b1b77d047d1a56a1aea6e01002ac0c7026876213"
 "checksum generic-array 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)" = "3c0f28c2f5bfb5960175af447a2da7c18900693738343dc896ffbcabd9839592"
-"checksum libc 0.2.47 (registry+https://github.com/rust-lang/crates.io-index)" = "48450664a984b25d5b479554c29cc04e3150c97aa4c01da5604a2d4ed9151476"
+"checksum libc 0.2.48 (registry+https://github.com/rust-lang/crates.io-index)" = "e962c7641008ac010fa60a7dfdc1712449f29c44ef2d4702394aea943ee75047"
 "checksum md-5 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)" = "a18af3dcaf2b0219366cdb4e2af65a6101457b415c3d1a5c71dd9c2b7c77b9c8"
 "checksum opaque-debug 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "51ecbcb821e1bd256d456fe858aaa7f380b63863eab2eb86eee1bd9f33dd6682"
 "checksum openssh-keys 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)" = "dcabbb45c839c6774831afc280a43851dbce6d4d44a45943acfeecf58b6ca133"
