@@ -33,7 +33,7 @@ extern crate openssh_keys;
 extern crate users;
 
 pub mod errors {
-    error_chain!{
+    error_chain! {
         links {
             ParseError(::openssh_keys::errors::Error, ::openssh_keys::errors::ErrorKind);
         }
@@ -58,14 +58,14 @@ pub mod errors {
 }
 
 use errors::*;
-use users::{User, switch};
-use users::os::unix::UserExt;
-use openssh_keys::PublicKey;
-use std::fs::{File, self};
 use fs2::FileExt;
-use std::path::{Path, PathBuf};
-use std::io::{Write, BufReader, BufRead, Read};
+use openssh_keys::PublicKey;
 use std::collections::HashMap;
+use std::fs::{self, File};
+use std::io::{BufRead, BufReader, Read, Write};
+use std::path::{Path, PathBuf};
+use users::os::unix::UserExt;
+use users::{switch, User};
 
 const SSH_DIR: &str = ".ssh";
 const AUTHORIZED_KEYS_DIR: &str = "authorized_keys.d";
@@ -129,13 +129,13 @@ impl FileLock {
     }
 
     fn lock(&self) -> Result<()> {
-        self.lock.lock_exclusive()
+        self.lock
+            .lock_exclusive()
             .chain_err(|| "failed to lock file")
     }
 
     fn unlock(&self) -> Result<()> {
-        self.lock.unlock()
-            .chain_err(|| "failed to unlock file")
+        self.lock.unlock().chain_err(|| "failed to unlock file")
     }
 }
 
@@ -178,12 +178,15 @@ fn truncate_dir<P: AsRef<Path>>(dir: P) -> Result<()> {
             fs::remove_file(dir)
                 .chain_err(|| format!("failed to remove existing file '{:?}'", dir))?;
         } else {
-            return Err(format!("failed to remove existing path '{:?}': not a file or directory", dir).into())
+            return Err(format!(
+                "failed to remove existing path '{:?}': not a file or directory",
+                dir
+            )
+            .into());
         }
     }
 
-    fs::create_dir_all(dir)
-        .chain_err(|| format!("failed to create directory '{:?}'", dir))
+    fs::create_dir_all(dir).chain_err(|| format!("failed to create directory '{:?}'", dir))
 }
 
 /// `replace_dir` moves old to new safely.
@@ -205,7 +208,8 @@ fn replace_dir<P: AsRef<Path>>(old: P, new: P, stage: P) -> Result<()> {
         // sync the old directory to ensure our changes have been persisted
         let old_as_file = File::open(old)
             .chain_err(|| format!("failed to open old dir '{}' for syncing", old.display()))?;
-        old_as_file.sync_all()
+        old_as_file
+            .sync_all()
             .chain_err(|| format!("failed to sync old dir '{}'", old.display()))?;
 
         truncate_dir(stage)?;
@@ -213,14 +217,15 @@ fn replace_dir<P: AsRef<Path>>(old: P, new: P, stage: P) -> Result<()> {
             fs::rename(new, stage)
                 .chain_err(|| format!("failed to move '{:?}' to '{:?}'", new, stage))?;
         }
-        fs::rename(old, new)
-            .chain_err(|| format!("failed to move '{:?}' to '{:?}'", old, new))?;
+        fs::rename(old, new).chain_err(|| format!("failed to move '{:?}' to '{:?}'", old, new))?;
 
-        let parent_path = new.parent()
+        let parent_path = new
+            .parent()
             .ok_or_else(|| format!("failed to sync parent directory of '{}'", new.display()))?;
         let parent_dir = File::open(parent_path)
             .chain_err(|| format!("failed to open dir '{}' for syncing", parent_path.display()))?;
-        parent_dir.sync_all()
+        parent_dir
+            .sync_all()
             .chain_err(|| format!("failed to sync dir '{}'", parent_path.display()))?;
 
         truncate_dir(stage)?;
@@ -259,8 +264,12 @@ impl AuthorizedKeys {
 
         // get our staging directory
         let stage_dir = self.stage_dir();
-        truncate_dir(&stage_dir)
-            .chain_err(|| format!("failed to create staging directory '{}'", stage_dir.display()))?;
+        truncate_dir(&stage_dir).chain_err(|| {
+            format!(
+                "failed to create staging directory '{}'",
+                stage_dir.display()
+            )
+        })?;
 
         // write all the keys to the staging directory
         for keyset in self.keys.values() {
@@ -271,22 +280,27 @@ impl AuthorizedKeys {
             // zero-sized file with it's name though to signal that it's
             // disabled.
             if keyset.disabled {
-                continue
+                continue;
             }
             for key in &keyset.keys {
                 match *key {
-                    AuthorizedKeyEntry::Valid{ref key} => writeln!(keyfile, "{}", key)
+                    AuthorizedKeyEntry::Valid { ref key } => writeln!(keyfile, "{}", key)
                         .chain_err(|| format!("failed to write to file '{:?}'", keyfilename))?,
-                    AuthorizedKeyEntry::Invalid{ref key} => writeln!(keyfile, "{}", key)
+                    AuthorizedKeyEntry::Invalid { ref key } => writeln!(keyfile, "{}", key)
                         .chain_err(|| format!("failed to write to file '{:?}'", keyfilename))?,
                 }
             }
 
-            keyfile.sync_all()
+            keyfile
+                .sync_all()
                 .chain_err(|| format!("failed to sync file '{:?}'", keyfilename))?;
         }
 
-        replace_dir(&stage_dir, &self.authorized_keys_dir(), &self.stage_old_dir())
+        replace_dir(
+            &stage_dir,
+            &self.authorized_keys_dir(),
+            &self.stage_old_dir(),
+        )
     }
 
     /// sync writes all the keys we have to authorized_keys. it writes the
@@ -304,8 +318,12 @@ impl AuthorizedKeys {
 
         // get our staging directory
         let stage_filename = self.stage_file();
-        let mut stage_file = File::create(&stage_filename)
-            .chain_err(|| format!("failed to create or truncate staging file '{:?}'", stage_filename))?;
+        let mut stage_file = File::create(&stage_filename).chain_err(|| {
+            format!(
+                "failed to create or truncate staging file '{:?}'",
+                stage_filename
+            )
+        })?;
 
         // note that this file is auto-generated
         writeln!(stage_file, "# auto-generated by update-ssh-keys")
@@ -315,31 +333,42 @@ impl AuthorizedKeys {
         for keyset in self.keys.values() {
             // if the keyset is disabled, skip it
             if keyset.disabled {
-                continue
+                continue;
             }
             for key in &keyset.keys {
                 // only write the key to authorized_keys if it is valid
-                if let AuthorizedKeyEntry::Valid{ref key} = *key {
+                if let AuthorizedKeyEntry::Valid { ref key } = *key {
                     writeln!(stage_file, "{}", key)
                         .chain_err(|| format!("failed to write to file '{:?}'", stage_filename))?;
                 }
             }
         }
 
-        stage_file.sync_all()
+        stage_file
+            .sync_all()
             .chain_err(|| format!("failed to sync file '{:?}'", stage_filename))?;
         drop(stage_file);
 
         // destroy the old authorized keys file and move the staging one to that
         // location
-        fs::rename(&stage_filename, &self.authorized_keys_file())
-            .chain_err(|| format!("failed to move '{:?}' to '{:?}'", stage_filename, self.authorized_keys_file()))?;
+        fs::rename(&stage_filename, &self.authorized_keys_file()).chain_err(|| {
+            format!(
+                "failed to move '{:?}' to '{:?}'",
+                stage_filename,
+                self.authorized_keys_file()
+            )
+        })?;
 
-        let parent_path = stage_filename.parent()
-            .ok_or_else(|| format!("failed to sync parent directory of '{}'", stage_filename.display()))?;
+        let parent_path = stage_filename.parent().ok_or_else(|| {
+            format!(
+                "failed to sync parent directory of '{}'",
+                stage_filename.display()
+            )
+        })?;
         let parent_dir_file = File::open(parent_path)
             .chain_err(|| format!("failed to open '{}' for syncing", parent_path.display()))?;
-        parent_dir_file.sync_all()
+        parent_dir_file
+            .sync_all()
             .chain_err(|| format!("failed to sync '{}'", parent_path.display()))?;
 
         Ok(())
@@ -350,28 +379,33 @@ impl AuthorizedKeys {
     /// file operations fail, or if it can't parse any of the authorized_keys
     /// files
     fn read_all_keys(dir: &Path) -> Result<HashMap<String, AuthorizedKeySet>> {
-        let dir_contents = fs::read_dir(&dir)
-            .chain_err(|| format!("failed to read from directory {:?}", dir))?;
+        let dir_contents =
+            fs::read_dir(&dir).chain_err(|| format!("failed to read from directory {:?}", dir))?;
         let mut keys = HashMap::new();
         for entry in dir_contents {
-            let entry = entry.chain_err(|| format!("failed to read entry in directory {:?}", dir))?;
+            let entry =
+                entry.chain_err(|| format!("failed to read entry in directory {:?}", dir))?;
             let path = entry.path();
             if path.is_dir() {
                 // if it's a directory, we don't know what to do
                 return Err(format!("'{:?}' is a directory", path).into());
             } else {
-                let name = path.file_name()
+                let name = path
+                    .file_name()
                     .ok_or_else(|| format!("failed to get filename for '{:?}'", path))?
                     .to_str()
                     .ok_or_else(|| format!("failed to convert filename '{:?}' to string", path))?;
-                let from = File::open(&path)
-                    .chain_err(|| format!("failed to open file {:?}", path))?;
+                let from =
+                    File::open(&path).chain_err(|| format!("failed to open file {:?}", path))?;
                 let keyset = AuthorizedKeys::read_keys(from)?;
-                keys.insert(name.to_string(), AuthorizedKeySet {
-                    filename: name.to_string(),
-                    disabled: keyset.is_empty(),
-                    keys: keyset,
-                });
+                keys.insert(
+                    name.to_string(),
+                    AuthorizedKeySet {
+                        filename: name.to_string(),
+                        disabled: keyset.is_empty(),
+                        keys: keyset,
+                    },
+                );
             }
         }
         Ok(keys)
@@ -381,7 +415,8 @@ impl AuthorizedKeys {
     /// as described by the sshd man page. it logs a warning if it fails to
     /// parse any of the keys.
     pub fn read_keys<R>(r: R) -> Result<Vec<AuthorizedKeyEntry>>
-        where R: Read
+    where
+        R: Read,
     {
         let keybuf = BufReader::new(r);
         // authorized_keys files are newline-separated lists of public keys
@@ -391,11 +426,11 @@ impl AuthorizedKeys {
             // skip any empty lines and any comment lines (prefixed with '#')
             if !key.is_empty() && !(key.trim().starts_with('#')) {
                 match PublicKey::parse(&key) {
-                    Ok(pkey) => keys.push(AuthorizedKeyEntry::Valid{key: pkey}),
+                    Ok(pkey) => keys.push(AuthorizedKeyEntry::Valid { key: pkey }),
                     Err(e) => {
                         println!("warning: failed to parse public key \"{}\": {}, omitting from authorized_keys", key, e);
-                        keys.push(AuthorizedKeyEntry::Invalid{key})
-                    },
+                        keys.push(AuthorizedKeyEntry::Invalid { key })
+                    }
                 };
             }
         }
@@ -438,14 +473,18 @@ impl AuthorizedKeys {
             // read the existing keyset from the file
             let filename = authorized_keys_file(&ssh_dir);
             if filename.exists() {
-                let file = File::open(&filename)
-                    .chain_err(|| format!("failed to open authorized keys file: '{:?}'", filename))?;
+                let file = File::open(&filename).chain_err(|| {
+                    format!("failed to open authorized keys file: '{:?}'", filename)
+                })?;
                 let mut keys = HashMap::new();
-                keys.insert(PRESERVED_KEYS_FILE.to_string(), AuthorizedKeySet {
-                    filename: PRESERVED_KEYS_FILE.to_string(),
-                    disabled: false,
-                    keys: AuthorizedKeys::read_keys(file)?,
-                });
+                keys.insert(
+                    PRESERVED_KEYS_FILE.to_string(),
+                    AuthorizedKeySet {
+                        filename: PRESERVED_KEYS_FILE.to_string(),
+                        disabled: false,
+                        keys: AuthorizedKeys::read_keys(file)?,
+                    },
+                );
                 keys
             } else {
                 // if the authorized_keys file doesn't exist, we don't start
@@ -455,7 +494,7 @@ impl AuthorizedKeys {
         } else {
             // either the akd doesn't exist and create is false, or it exists
             // and is not a directory
-            return Err(format!("'{:?}' doesn't exist or is not a directory", akd).into())
+            return Err(format!("'{:?}' doesn't exist or is not a directory", akd).into());
         };
 
         Ok(AuthorizedKeys {
@@ -486,7 +525,13 @@ impl AuthorizedKeys {
     ///
     /// add_keys returns an error if the key already exists and replace is
     /// false, or if the key is disabled and force is false
-    pub fn add_keys(&mut self, name: &str, keys: Vec<AuthorizedKeyEntry>, replace: bool, force: bool) -> Result<Vec<AuthorizedKeyEntry>> {
+    pub fn add_keys(
+        &mut self,
+        name: &str,
+        keys: Vec<AuthorizedKeyEntry>,
+        replace: bool,
+        force: bool,
+    ) -> Result<Vec<AuthorizedKeyEntry>> {
         // if we are passed an empty vector of keys, don't create a file
         if keys.is_empty() {
             return Ok(vec![]);
@@ -499,11 +544,14 @@ impl AuthorizedKeys {
                 return Err(ErrorKind::KeysExist(name.to_string()).into());
             }
         }
-        self.keys.insert(name.to_string(), AuthorizedKeySet {
-            filename: name.to_string(),
-            disabled: false,
-            keys: keys.clone(),
-        });
+        self.keys.insert(
+            name.to_string(),
+            AuthorizedKeySet {
+                filename: name.to_string(),
+                disabled: false,
+                keys: keys.clone(),
+            },
+        );
         Ok(keys)
     }
 
@@ -522,11 +570,14 @@ impl AuthorizedKeys {
             keyset.keys = vec![];
             return keys;
         }
-        self.keys.insert(name.to_string(), AuthorizedKeySet {
-            filename: name.to_string(),
-            disabled: true,
-            keys: vec![],
-        });
+        self.keys.insert(
+            name.to_string(),
+            AuthorizedKeySet {
+                filename: name.to_string(),
+                disabled: true,
+                keys: vec![],
+            },
+        );
         vec![]
     }
 }
