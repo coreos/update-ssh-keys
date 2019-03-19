@@ -5,7 +5,8 @@ use std::process::Command;
 // retro-compatibility.
 #[test]
 fn test_compat_python_suite() {
-    let pytests = env::current_dir().unwrap()
+    let pytests = env::current_dir()
+        .unwrap()
         .join("tests")
         .join("test_update_ssh_keys.py");
     let result = Command::new(pytests).output().unwrap();
