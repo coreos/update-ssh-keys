@@ -6,7 +6,7 @@ license = "Apache-2.0"
 repository = "https://github.com/coreos/update-ssh-keys"
 documentation = "https://docs.rs/update-ssh-keys"
 description = "A tool for managing authorized SSH keys"
-version = "0.4.1-alpha.0"
+version = "0.4.1"
 
 [dependencies]
 # Private dependencies.
