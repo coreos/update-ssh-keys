@@ -10,7 +10,7 @@ version = "0.4.2-alpha.0"
 
 [dependencies]
 # Private dependencies.
-clap = "2.26"
+clap = "2.33"
 fs2 = "0.4"
 # Public dependencies, exposed through library API.
 error-chain = { version = "0.12", default-features = false }
