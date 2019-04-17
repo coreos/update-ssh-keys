@@ -1,7 +1,7 @@
 # update-ssh-keys
 
 [![Build Status](https://travis-ci.org/coreos/update-ssh-keys.svg?branch=master)](https://travis-ci.org/coreos/update-ssh-keys)
-![minimum rust 1.28](https://img.shields.io/badge/rust-1.28%2B-orange.svg)
+![minimum rust 1.31](https://img.shields.io/badge/rust-1.31%2B-orange.svg)
 
 `update-ssh-keys` is a command line tool and a library for managing openssh
 authorized public keys. It keeps track of sets of keys with names, allows for

@@ -26,6 +26,8 @@
 //! analogue. When the directory is no longer being manipulated, the lock is
 //! released. See `AuthorizedKeys::open` for details.
 
+#![allow(deprecated)]
+
 #[macro_use]
 extern crate error_chain;
 extern crate fs2;
