@@ -31,10 +31,8 @@ lto = true
 
 [package.metadata.release]
 sign-commit = true
-upload-doc = false
 disable-push = true
 disable-publish = true
 pre-release-commit-message = "cargo: update-ssh-keys release {{version}}"
-pro-release-commit-message = "cargo: version bump to {{version}}"
+pro-release-commit-message = "cargo: development version bump"
 tag-message = "update-ssh-keys v{{version}}"
-tag-prefix = "v"
