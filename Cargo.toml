@@ -15,7 +15,7 @@ fs2 = "0.4"
 # Public dependencies, exposed through library API.
 error-chain = { version = "0.12", default-features = false }
 openssh-keys = "0.4"
-users = "0.9"
+users = "0.10"
 
 [[bin]]
 name = "update-ssh-keys"
