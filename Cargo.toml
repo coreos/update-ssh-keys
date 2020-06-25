@@ -34,5 +34,5 @@ sign-commit = true
 disable-push = true
 disable-publish = true
 pre-release-commit-message = "cargo: update-ssh-keys release {{version}}"
-pro-release-commit-message = "cargo: development version bump"
+post-release-commit-message = "cargo: development version bump"
 tag-message = "update-ssh-keys v{{version}}"
