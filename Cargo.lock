@@ -14,7 +14,7 @@ version = "0.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "hermit-abi 0.1.16 (registry+https://github.com/rust-lang/crates.io-index)",
- "libc 0.2.77 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libc 0.2.78 (registry+https://github.com/rust-lang/crates.io-index)",
  "winapi 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -86,7 +86,7 @@ name = "fs2"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "libc 0.2.77 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libc 0.2.78 (registry+https://github.com/rust-lang/crates.io-index)",
  "winapi 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -104,12 +104,12 @@ name = "hermit-abi"
 version = "0.1.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "libc 0.2.77 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libc 0.2.78 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "libc"
-version = "0.2.77"
+version = "0.2.78"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
@@ -198,7 +198,7 @@ name = "users"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "libc 0.2.77 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libc 0.2.78 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.11 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -246,7 +246,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum fs2 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)" = "9564fc758e15025b46aa6643b1b77d047d1a56a1aea6e01002ac0c7026876213"
 "checksum generic-array 0.14.4 (registry+https://github.com/rust-lang/crates.io-index)" = "501466ecc8a30d1d3b7fc9229b122b2ce8ed6e9d9223f1138d4babb253e51817"
 "checksum hermit-abi 0.1.16 (registry+https://github.com/rust-lang/crates.io-index)" = "4c30f6d0bc6b00693347368a67d41b58f2fb851215ff1da49e90fe2c5c667151"
-"checksum libc 0.2.77 (registry+https://github.com/rust-lang/crates.io-index)" = "f2f96b10ec2560088a8e76961b00d47107b3a625fecb76dedb29ee7ccbf98235"
+"checksum libc 0.2.78 (registry+https://github.com/rust-lang/crates.io-index)" = "aa7087f49d294270db4e1928fc110c976cd4b9e5a16348e0a1df09afa99e6c98"
 "checksum log 0.4.11 (registry+https://github.com/rust-lang/crates.io-index)" = "4fabed175da42fed1fa0746b0ea71f412aa9d35e76e95e59b192c64b9dc2bf8b"
 "checksum md-5 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)" = "7b5a279bb9607f9f53c22d496eade00d138d1bdcccd07d74650387cf94942a15"
 "checksum opaque-debug 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
