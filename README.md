@@ -1,6 +1,5 @@
 # update-ssh-keys
 
-[![Build Status](https://travis-ci.org/coreos/update-ssh-keys.svg?branch=master)](https://travis-ci.org/coreos/update-ssh-keys)
 ![minimum rust 1.43](https://img.shields.io/badge/rust-1.43%2B-orange.svg)
 
 `update-ssh-keys` is a command line tool and a library for managing openssh
