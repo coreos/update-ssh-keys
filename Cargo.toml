@@ -3,6 +3,7 @@ name = "update-ssh-keys"
 authors = [ "Stephen Demos <stephen.demos@coreos.com>",
             "Luca Bruno <lucab@debian.org>" ]
 license = "Apache-2.0"
+exclude = [".github", ".gitignore"]
 repository = "https://github.com/coreos/update-ssh-keys"
 documentation = "https://docs.rs/update-ssh-keys"
 description = "A tool for managing authorized SSH keys"
