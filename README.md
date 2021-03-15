@@ -1,7 +1,23 @@
 # update-ssh-keys
 
-[![Build Status](https://travis-ci.org/coreos/update-ssh-keys.svg?branch=master)](https://travis-ci.org/coreos/update-ssh-keys)
 ![minimum rust 1.43](https://img.shields.io/badge/rust-1.43%2B-orange.svg)
+
+## ⚠ This crate is deprecated and unmaintained ⚠
+
+`update-ssh-keys` is no longer maintained; the recommended replacement is
+[ssh-key-dir](https://github.com/coreos/ssh-key-dir).
+
+`update-ssh-keys` implements `authorized_keys.d` by providing a program and
+library to merge keys from `authorized_keys.d/*` into `authorized_keys` so
+`sshd` can find them.  This manual process can cause confusion if the
+directory gets out of sync with the `authorized_keys` file.
+
+ssh-key-dir solves this problem by providing a helper program that `sshd`
+can run at authentication time to read `authorized_keys.d` files directly.
+In this model, `authorized_keys` is simply an additional source of keys, and
+no longer needs to be kept in sync.
+
+## About `update-ssh-keys`
 
 `update-ssh-keys` is a command line tool and a library for managing openssh
 authorized public keys. It keeps track of sets of keys with names, allows for
